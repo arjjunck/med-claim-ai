@@ -7,6 +7,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import MobileNav from "./MobileNav";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -108,6 +109,7 @@ export default function AppShell({ children, title, subtitle }: AppShellProps) {
           {children}
         </section>
       </div>
+      <MobileNav />
     </main>
   );
 }

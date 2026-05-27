@@ -25,3 +25,29 @@ button,
 a {
   -webkit-tap-highlight-color: transparent;
 }
+
+::selection {
+  background: rgba(0, 113, 227, 0.18);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f5f5f7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 999px;
+  border: 2px solid #f5f5f7;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
