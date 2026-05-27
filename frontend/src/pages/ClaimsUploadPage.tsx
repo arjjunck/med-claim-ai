@@ -1,6 +1,7 @@
 import { useRef, useState } from "react";
 import {
   AlertCircle,
+  Brain,
   CheckCircle2,
   FileSpreadsheet,
   UploadCloud,
@@ -8,9 +9,9 @@ import {
 } from "lucide-react";
 import AppShell from "../components/AppShell";
 import RiskBadge from "../components/RiskBadge";
+import ExplanationModal from "../components/ExplanationModal";
 import type { ClaimResult } from "../types/claim";
 import { saveDemoClaims } from "../utils/claimStore";
-
 
 const sampleResults: ClaimResult[] = [
   {
@@ -56,6 +57,7 @@ export default function ClaimsUploadPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selectedClaim, setSelectedClaim] = useState<ClaimResult | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState<
     "idle" | "analysing" | "success" | "error"
@@ -126,6 +128,7 @@ export default function ClaimsUploadPage() {
 
   function removeFile() {
     setSelectedFile(null);
+    setSelectedClaim(null);
     setStatus("idle");
     setError("");
     setProgress(0);
@@ -282,9 +285,10 @@ export default function ClaimsUploadPage() {
 
           <button
             onClick={simulateAnalysis}
-            className="mt-6 w-full rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc]"
+            disabled={status === "analysing" || status === "success"}
+            className="mt-6 w-full rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Analyse Claims
+            {status === "success" ? "Analysed" : "Analyse Claims"}
           </button>
         </section>
 
@@ -344,6 +348,7 @@ export default function ClaimsUploadPage() {
                       <th className="px-4 py-3">Amount</th>
                       <th className="px-4 py-3">Risk</th>
                       <th className="px-4 py-3">Reason</th>
+                      <th className="px-4 py-3">Action</th>
                     </tr>
                   </thead>
 
@@ -356,13 +361,27 @@ export default function ClaimsUploadPage() {
                         <td className="px-4 py-4 font-medium">
                           {claim.claimNumber}
                         </td>
+
                         <td className="px-4 py-4">{claim.procedureCode}</td>
+
                         <td className="px-4 py-4">€{claim.amount}</td>
+
                         <td className="px-4 py-4">
                           <RiskBadge level={claim.riskLevel} />
                         </td>
+
                         <td className="px-4 py-4 text-gray-500">
                           {claim.riskReason}
+                        </td>
+
+                        <td className="px-4 py-4">
+                          <button
+                            onClick={() => setSelectedClaim(claim)}
+                            className="inline-flex items-center gap-2 rounded-full bg-[#1d1d1f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-black"
+                          >
+                            <Brain size={14} />
+                            Explain
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -373,6 +392,11 @@ export default function ClaimsUploadPage() {
           </div>
         </section>
       </div>
+
+      <ExplanationModal
+        claim={selectedClaim}
+        onClose={() => setSelectedClaim(null)}
+      />
     </AppShell>
   );
 }
