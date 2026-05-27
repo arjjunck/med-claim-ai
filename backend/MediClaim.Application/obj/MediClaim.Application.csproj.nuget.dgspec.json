@@ -53,6 +53,10 @@
             "Microsoft.AspNetCore.Identity": {
               "target": "Package",
               "version": "[2.3.10, )"
+            },
+            "System.IdentityModel.Tokens.Jwt": {
+              "target": "Package",
+              "version": "[8.18.0, )"
             }
           },
           "imports": [

@@ -1,20 +1,35 @@
 import { useState } from "react";
 import { Activity, ArrowRight, Lock, Mail, UserPlus } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { loginUser } from "../api/authApi";
 
 export default function LoginPage() {
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("demo@mediclaim.ai");
   const [password, setPassword] = useState("password123");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  function handleLogin(event: React.FormEvent) {
+  async function handleLogin(event: React.FormEvent) {
     event.preventDefault();
 
-    localStorage.setItem("token", "demo-token");
-    localStorage.setItem("userEmail", email);
+    try {
+      setIsLoading(true);
+      setError("");
 
-    navigate("/dashboard");
+      const result = await loginUser(email, password);
+
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("userEmail", result.email);
+      localStorage.setItem("userName", result.fullName);
+
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -35,7 +50,7 @@ export default function LoginPage() {
           </Link>
 
           <p className="text-sm font-medium text-[#0071e3]">
-            Secure workspace preview
+            Secure workspace
           </p>
 
           <h1 className="mt-3 max-w-3xl text-5xl font-semibold tracking-tight sm:text-6xl">
@@ -43,12 +58,12 @@ export default function LoginPage() {
           </h1>
 
           <p className="mt-6 max-w-2xl text-lg leading-8 text-gray-600">
-            This login screen is currently a frontend demo. In the backend
-            phase, it will connect to ASP.NET Core JWT authentication.
+            This login page now connects to the ASP.NET Core JWT authentication
+            backend.
           </p>
 
           <div className="mt-8 grid gap-4 sm:grid-cols-3">
-            {["JWT auth", "PDF upload", "RAG chat"].map((item) => (
+            {["JWT auth", "PostgreSQL", "Protected API"].map((item) => (
               <div
                 key={item}
                 className="rounded-[1.5rem] border border-white/80 bg-white/70 p-4 text-sm font-medium shadow-sm backdrop-blur-xl"
@@ -66,7 +81,7 @@ export default function LoginPage() {
                 Welcome back
               </h2>
               <p className="mt-2 text-sm text-gray-500">
-                Use the demo credentials or enter your own email.
+                Sign in with a registered account.
               </p>
             </div>
 
@@ -105,11 +120,18 @@ export default function LoginPage() {
                 </div>
               </div>
 
+              {error && (
+                <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc]"
+                disabled={isLoading}
+                className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Sign in
+                {isLoading ? "Signing in..." : "Sign in"}
                 <ArrowRight
                   size={17}
                   className="transition group-hover:translate-x-1"
@@ -120,7 +142,7 @@ export default function LoginPage() {
             <div className="mt-6 flex items-center justify-between rounded-2xl bg-white p-4 text-sm shadow-sm">
               <div>
                 <p className="font-medium">New to MediClaim AI?</p>
-                <p className="text-xs text-gray-500">Create a demo account</p>
+                <p className="text-xs text-gray-500">Create an account</p>
               </div>
 
               <Link

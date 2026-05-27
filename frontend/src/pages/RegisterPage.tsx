@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Activity, ArrowRight, Lock, Mail, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { registerUser } from "../api/authApi";
 
 export default function RegisterPage() {
   const navigate = useNavigate();
@@ -8,15 +9,28 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("Demo User");
   const [email, setEmail] = useState("demo@mediclaim.ai");
   const [password, setPassword] = useState("password123");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  function handleRegister(event: React.FormEvent) {
+  async function handleRegister(event: React.FormEvent) {
     event.preventDefault();
 
-    localStorage.setItem("token", "demo-token");
-    localStorage.setItem("userName", fullName);
-    localStorage.setItem("userEmail", email);
+    try {
+      setIsLoading(true);
+      setError("");
 
-    navigate("/dashboard");
+      const result = await registerUser(fullName, email, password);
+
+      localStorage.setItem("token", result.token);
+      localStorage.setItem("userEmail", result.email);
+      localStorage.setItem("userName", result.fullName);
+
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -57,7 +71,7 @@ export default function RegisterPage() {
                 Create account
               </h2>
               <p className="mt-2 text-sm text-gray-500">
-                Frontend demo registration for now.
+                This registration connects to PostgreSQL through ASP.NET Core.
               </p>
             </div>
 
@@ -112,11 +126,18 @@ export default function RegisterPage() {
                 </div>
               </div>
 
+              {error && (
+                <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc]"
+                disabled={isLoading}
+                className="group flex w-full items-center justify-center gap-2 rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-60"
               >
-                Create account
+                {isLoading ? "Creating account..." : "Create account"}
                 <ArrowRight
                   size={17}
                   className="transition group-hover:translate-x-1"
