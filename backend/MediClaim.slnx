@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="MediClaim.Api/MediClaim.Api.csproj" />
+  <Project Path="MediClaim.Application/MediClaim.Application.csproj" />
+  <Project Path="MediClaim.Domain/MediClaim.Domain.csproj" />
+  <Project Path="MediClaim.Infrastructure/MediClaim.Infrastructure.csproj" />
+  <Project Path="MediClaim.Tests/MediClaim.Tests.csproj" />
+</Solution>
