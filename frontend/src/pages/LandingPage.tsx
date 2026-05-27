@@ -56,7 +56,7 @@ export default function LandingPage() {
         </div>
 
         <Link
-          to="/dashboard"
+          to="/login"
           className="rounded-full bg-[#0071e3] px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-[#0066cc]"
         >
           Start demo
