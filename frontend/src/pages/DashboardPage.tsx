@@ -1,0 +1,142 @@
+import {
+  ArrowRight,
+  FileText,
+  MessageSquare,
+  ShieldAlert,
+  UploadCloud,
+} from "lucide-react";
+import { Link } from "react-router-dom";
+import AppShell from "../components/AppShell";
+import StatCard from "../components/StatCard";
+
+const actions = [
+  {
+    title: "Upload Policy PDF",
+    description: "Add medical or insurance documents for RAG-based Q&A.",
+    icon: FileText,
+    link: "/documents",
+  },
+  {
+    title: "Review Claim CSV",
+    description: "Upload claim records and identify simple risk indicators.",
+    icon: ShieldAlert,
+    link: "/claims",
+  },
+  {
+    title: "Ask Document Questions",
+    description: "Chat with uploaded documents using grounded AI answers.",
+    icon: MessageSquare,
+    link: "/chat",
+  },
+];
+
+export default function DashboardPage() {
+  return (
+    <AppShell
+      title="Dashboard"
+      subtitle="Medical document intelligence workspace"
+    >
+      <div className="grid gap-5 md:grid-cols-3">
+        <StatCard
+          label="Uploaded Documents"
+          value="0"
+          helper="Policy and medical PDFs"
+        />
+        <StatCard
+          label="Claims Reviewed"
+          value="0"
+          helper="CSV claim records analysed"
+        />
+        <StatCard
+          label="High Risk Flags"
+          value="0"
+          helper="Claims requiring review"
+        />
+      </div>
+
+      <section className="mt-8 grid gap-5 xl:grid-cols-[1.2fr_0.8fr]">
+        <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-semibold">Quick actions</h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Start with a document upload or claim review.
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            {actions.map((action) => {
+              const Icon = action.icon;
+
+              return (
+                <Link
+                  key={action.title}
+                  to={action.link}
+                  className="group rounded-[1.6rem] border border-gray-100 bg-[#fbfbfd] p-5 transition hover:-translate-y-1 hover:bg-white hover:shadow-lg"
+                >
+                  <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-white shadow-sm">
+                    <Icon size={20} className="text-[#0071e3]" />
+                  </div>
+
+                  <h3 className="font-semibold">{action.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-gray-500">
+                    {action.description}
+                  </p>
+
+                  <div className="mt-5 flex items-center gap-2 text-sm font-medium text-[#0071e3]">
+                    Open
+                    <ArrowRight
+                      size={16}
+                      className="transition group-hover:translate-x-1"
+                    />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
+          <div className="mb-6 flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f5f7]">
+              <UploadCloud size={20} className="text-[#0071e3]" />
+            </div>
+
+            <div>
+              <h2 className="text-xl font-semibold">Build progress</h2>
+              <p className="text-sm text-gray-500">Frontend foundation</p>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            {[
+              { label: "Landing page", status: "Done" },
+              { label: "Routing", status: "Done" },
+              { label: "Dashboard layout", status: "In Progress" },
+              { label: "Backend connection", status: "Next" },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="flex items-center justify-between rounded-2xl bg-[#fbfbfd] p-4"
+              >
+                <p className="text-sm font-medium">{item.label}</p>
+                <span
+                  className={`rounded-full px-3 py-1 text-xs font-medium ${
+                    item.status === "Done"
+                      ? "bg-emerald-100 text-emerald-700"
+                      : item.status === "In Progress"
+                      ? "bg-blue-100 text-blue-700"
+                      : "bg-gray-100 text-gray-600"
+                  }`}
+                >
+                  {item.status}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    </AppShell>
+  );
+}
