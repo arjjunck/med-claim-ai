@@ -7,6 +7,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import AppShell from "../components/AppShell";
+import { saveDemoDocument } from "../utils/documentStore";
 
 export default function DocumentUploadPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -91,11 +92,16 @@ export default function DocumentUploadPage() {
 
     const interval = window.setInterval(() => {
       setUploadProgress((prev) => {
-        if (prev >= 100) {
-          window.clearInterval(interval);
-          setStatus("success");
-          return 100;
-        }
+          if (prev >= 100) {
+              window.clearInterval(interval);
+
+              if (selectedFile) {
+                  saveDemoDocument(selectedFile);
+              }
+
+              setStatus("success");
+              return 100;
+          }
 
         return prev + 10;
       });
@@ -221,12 +227,13 @@ export default function DocumentUploadPage() {
             </div>
           )}
 
-          <button
-            onClick={simulateUpload}
-            className="mt-6 w-full rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc]"
-          >
-            Continue Upload
-          </button>
+                  <button
+                      onClick={simulateUpload}
+                      disabled={status === "uploading" || status === "success"}
+                      className="mt-6 w-full rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                      {status === "success" ? "Uploaded" : "Continue Upload"}
+                  </button>
         </section>
 
         <section className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">

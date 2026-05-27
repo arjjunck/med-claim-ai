@@ -85,7 +85,7 @@ export default function LandingPage() {
 
           <div className="mt-9 flex flex-col gap-3 sm:flex-row">
             <Link
-              to="/documents"
+              to="/login"
               className="group flex items-center justify-center gap-2 rounded-full bg-[#1d1d1f] px-7 py-3 text-sm font-medium text-white shadow-lg shadow-black/10 transition hover:scale-[1.02]"
             >
               Upload document

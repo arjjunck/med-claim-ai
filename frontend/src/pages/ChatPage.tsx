@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Bot,
   FileText,
@@ -7,8 +7,12 @@ import {
   User,
   Quote,
   Loader2,
+  UploadCloud,
 } from "lucide-react";
+import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
+import type { DemoDocument } from "../types/document";
+import { getDemoDocuments } from "../utils/documentStore";
 
 type ChatMessage = {
   id: number;
@@ -37,24 +41,41 @@ const initialMessages: ChatMessage[] = [
 ];
 
 export default function ChatPage() {
+  const [documents, setDocuments] = useState<DemoDocument[]>([]);
+  const [activeDocumentId, setActiveDocumentId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [question, setQuestion] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
+  useEffect(() => {
+    const savedDocuments = getDemoDocuments();
+    setDocuments(savedDocuments);
+
+    if (savedDocuments.length > 0) {
+      setActiveDocumentId(savedDocuments[0].id);
+    }
+  }, []);
+
+  const activeDocument = documents.find(
+    (document) => document.id === activeDocumentId
+  );
+
   function getSampleAnswer(userQuestion: string): ChatMessage {
+    const documentName = activeDocument?.fileName || "Sample Policy Document";
+
     return {
       id: Date.now() + 1,
       role: "assistant",
-      text: `Based on the uploaded policy context, this question requires review against the relevant coverage and exclusion sections. For this frontend demo, I am showing a simulated RAG answer for: "${userQuestion}". In the backend version, the answer will be generated from retrieved PDF chunks using Semantic Kernel.`,
+      text: `Based on the selected document context, this question requires review against the relevant coverage and exclusion sections. For this frontend demo, I am showing a simulated RAG answer for: "${userQuestion}". In the backend version, the answer will be generated from retrieved PDF chunks using Semantic Kernel.`,
       sources: [
         {
-          title: "Sample Policy Document",
+          title: documentName,
           page: "Page 2",
           excerpt:
             "Coverage applies only where the procedure is listed under eligible treatment categories and supported by required documentation.",
         },
         {
-          title: "Sample Policy Document",
+          title: documentName,
           page: "Page 5",
           excerpt:
             "Claims may require additional review where the treatment type, amount, or provider information falls outside normal policy conditions.",
@@ -66,7 +87,9 @@ export default function ChatPage() {
   function sendMessage(text?: string) {
     const finalQuestion = text || question;
 
-    if (!finalQuestion.trim()) return;
+    if (!finalQuestion.trim()) {
+      return;
+    }
 
     const userMessage: ChatMessage = {
       id: Date.now(),
@@ -74,12 +97,15 @@ export default function ChatPage() {
       text: finalQuestion,
     };
 
-    setMessages((current) => [...current, userMessage]);
+    setMessages((currentMessages) => [...currentMessages, userMessage]);
     setQuestion("");
     setIsTyping(true);
 
     window.setTimeout(() => {
-      setMessages((current) => [...current, getSampleAnswer(finalQuestion)]);
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        getSampleAnswer(finalQuestion),
+      ]);
       setIsTyping(false);
     }, 1200);
   }
@@ -96,29 +122,66 @@ export default function ChatPage() {
 
               <div>
                 <h2 className="text-xl font-semibold">Active document</h2>
-                <p className="text-sm text-gray-500">Frontend demo document</p>
+                <p className="text-sm text-gray-500">
+                  Select a PDF for document Q&A
+                </p>
               </div>
             </div>
 
-            <div className="rounded-[1.5rem] bg-[#fbfbfd] p-5">
-              <p className="text-sm font-semibold">sample_policy_document.pdf</p>
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                This is a placeholder document. Later, this will show the PDF
-                uploaded through the document upload module.
-              </p>
+            {documents.length === 0 ? (
+              <div className="rounded-[1.5rem] bg-[#fbfbfd] p-5">
+                <p className="text-sm font-semibold">No document selected</p>
 
-              <div className="mt-4 grid grid-cols-2 gap-3">
-                <div className="rounded-2xl bg-white p-4 shadow-sm">
-                  <p className="text-2xl font-semibold">12</p>
-                  <p className="text-xs text-gray-500">Chunks</p>
-                </div>
+                <p className="mt-2 text-sm leading-6 text-gray-500">
+                  Upload a PDF from the Documents page first. Then return here
+                  to ask questions from it.
+                </p>
 
-                <div className="rounded-2xl bg-white p-4 shadow-sm">
-                  <p className="text-2xl font-semibold">PDF</p>
-                  <p className="text-xs text-gray-500">File type</p>
-                </div>
+                <Link
+                  to="/documents"
+                  className="mt-5 inline-flex items-center gap-2 rounded-full bg-[#0071e3] px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.02] hover:bg-[#0066cc]"
+                >
+                  <UploadCloud size={16} />
+                  Upload PDF
+                </Link>
               </div>
-            </div>
+            ) : (
+              <div className="rounded-[1.5rem] bg-[#fbfbfd] p-5">
+                <label className="mb-2 block text-sm font-medium text-gray-700">
+                  Select document
+                </label>
+
+                <select
+                  value={activeDocumentId}
+                  onChange={(event) => setActiveDocumentId(event.target.value)}
+                  className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0071e3] focus:ring-4 focus:ring-blue-100"
+                >
+                  {documents.map((document) => (
+                    <option key={document.id} value={document.id}>
+                      {document.fileName}
+                    </option>
+                  ))}
+                </select>
+
+                {activeDocument && (
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl bg-white p-4 shadow-sm">
+                      <p className="text-2xl font-semibold">
+                        {activeDocument.chunkCount}
+                      </p>
+                      <p className="text-xs text-gray-500">Chunks</p>
+                    </div>
+
+                    <div className="rounded-2xl bg-white p-4 shadow-sm">
+                      <p className="text-2xl font-semibold">
+                        {activeDocument.sizeMB}
+                      </p>
+                      <p className="text-xs text-gray-500">MB</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">

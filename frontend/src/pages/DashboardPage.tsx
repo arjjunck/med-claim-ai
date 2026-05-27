@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import {
   ArrowRight,
   FileText,
@@ -8,6 +9,8 @@ import {
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import StatCard from "../components/StatCard";
+import type { DemoDocument } from "../types/document";
+import { getDemoDocuments } from "../utils/documentStore";
 
 const actions = [
   {
@@ -31,6 +34,12 @@ const actions = [
 ];
 
 export default function DashboardPage() {
+  const [documents, setDocuments] = useState<DemoDocument[]>([]);
+
+  useEffect(() => {
+    setDocuments(getDemoDocuments());
+  }, []);
+
   return (
     <AppShell
       title="Dashboard"
@@ -39,7 +48,7 @@ export default function DashboardPage() {
       <div className="grid gap-5 md:grid-cols-3">
         <StatCard
           label="Uploaded Documents"
-          value="0"
+          value={documents.length.toString()}
           helper="Policy and medical PDFs"
         />
         <StatCard
@@ -80,6 +89,7 @@ export default function DashboardPage() {
                   </div>
 
                   <h3 className="font-semibold">{action.title}</h3>
+
                   <p className="mt-2 text-sm leading-6 text-gray-500">
                     {action.description}
                   </p>
@@ -97,43 +107,77 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
-          <div className="mb-6 flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f5f7]">
-              <UploadCloud size={20} className="text-[#0071e3]" />
+        <div className="space-y-5">
+          <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
+            <div className="mb-6 flex items-center gap-3">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f5f7]">
+                <UploadCloud size={20} className="text-[#0071e3]" />
+              </div>
+
+              <div>
+                <h2 className="text-xl font-semibold">Build progress</h2>
+                <p className="text-sm text-gray-500">Frontend foundation</p>
+              </div>
             </div>
 
-            <div>
-              <h2 className="text-xl font-semibold">Build progress</h2>
-              <p className="text-sm text-gray-500">Frontend foundation</p>
+            <div className="space-y-4">
+              {[
+                { label: "Landing page", status: "Done" },
+                { label: "Routing", status: "Done" },
+                { label: "Dashboard layout", status: "Done" },
+                { label: "Backend connection", status: "Next" },
+              ].map((item) => (
+                <div
+                  key={item.label}
+                  className="flex items-center justify-between rounded-2xl bg-[#fbfbfd] p-4"
+                >
+                  <p className="text-sm font-medium">{item.label}</p>
+
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      item.status === "Done"
+                        ? "bg-emerald-100 text-emerald-700"
+                        : item.status === "In Progress"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-gray-100 text-gray-600"
+                    }`}
+                  >
+                    {item.status}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
 
-          <div className="space-y-4">
-            {[
-              { label: "Landing page", status: "Done" },
-              { label: "Routing", status: "Done" },
-              { label: "Dashboard layout", status: "In Progress" },
-              { label: "Backend connection", status: "Next" },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="flex items-center justify-between rounded-2xl bg-[#fbfbfd] p-4"
-              >
-                <p className="text-sm font-medium">{item.label}</p>
-                <span
-                  className={`rounded-full px-3 py-1 text-xs font-medium ${
-                    item.status === "Done"
-                      ? "bg-emerald-100 text-emerald-700"
-                      : item.status === "In Progress"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {item.status}
-                </span>
-              </div>
-            ))}
+          <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold">Recent documents</h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Uploaded PDFs saved in this demo browser session.
+            </p>
+
+            <div className="mt-5 space-y-3">
+              {documents.length === 0 ? (
+                <div className="rounded-2xl bg-[#fbfbfd] p-5 text-sm text-gray-500">
+                  No documents uploaded yet.
+                </div>
+              ) : (
+                documents.slice(0, 3).map((document) => (
+                  <div
+                    key={document.id}
+                    className="rounded-2xl border border-gray-100 bg-[#fbfbfd] p-4"
+                  >
+                    <p className="text-sm font-semibold">
+                      {document.fileName}
+                    </p>
+
+                    <p className="mt-1 text-xs text-gray-500">
+                      {document.sizeMB} MB · {document.chunkCount} chunks
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
           </div>
         </div>
       </section>

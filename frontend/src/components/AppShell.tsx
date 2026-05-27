@@ -6,7 +6,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import MobileNav from "./MobileNav";
 
 type AppShellProps = {
@@ -40,7 +40,14 @@ const navItems = [
 
 export default function AppShell({ children, title, subtitle }: AppShellProps) {
   const location = useLocation();
+  const navigate = useNavigate();
 
+  function handleLogout() {
+    localStorage.removeItem("token");
+    localStorage.removeItem("userEmail");
+    localStorage.removeItem("userName");
+    navigate("/login");
+  }
   return (
     <main className="min-h-screen bg-[#f5f5f7] px-4 py-4 text-[#1d1d1f]">
       <div className="mx-auto grid max-w-[1500px] gap-4 lg:grid-cols-[280px_1fr]">
@@ -98,12 +105,21 @@ export default function AppShell({ children, title, subtitle }: AppShellProps) {
               </h1>
             </div>
 
-            <Link
-              to="/"
-              className="rounded-full border border-gray-200 bg-white px-5 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition hover:bg-[#f5f5f7]"
-            >
-              Back home
-            </Link>
+<div className="flex items-center gap-3">
+  <Link
+    to="/"
+    className="rounded-full border border-gray-200 bg-white px-5 py-2 text-center text-sm font-medium text-gray-700 shadow-sm transition hover:bg-[#f5f5f7]"
+  >
+    Back home
+  </Link>
+
+  <button
+    onClick={handleLogout}
+    className="rounded-full bg-[#1d1d1f] px-5 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-black"
+  >
+    Logout
+  </button>
+</div>
           </header>
 
           {children}
