@@ -1,24 +1,59 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  AlertCircle,
   CheckCircle2,
   FileText,
+  RefreshCw,
   UploadCloud,
   X,
-  AlertCircle,
 } from "lucide-react";
 import AppShell from "../components/AppShell";
-import { saveDemoDocument } from "../utils/documentStore";
+import { Eye } from "lucide-react";
+import {
+  getDocumentById,
+  getUploadedDocuments,
+  uploadDocument,
+  type DocumentDetails,
+  type DocumentListItem,
+} from "../api/documentApi";
+
 
 export default function DocumentUploadPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [status, setStatus] = useState<"idle" | "uploading" | "success" | "error">(
-    "idle"
-  );
+  const [status, setStatus] = useState<
+    "idle" | "uploading" | "success" | "error"
+  >("idle");
   const [error, setError] = useState("");
+  const [isLoadingDocuments, setIsLoadingDocuments] = useState(false);
+const [selectedDocument, setSelectedDocument] = useState<DocumentDetails | null>(null);
+
+  async function loadDocuments() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setError("You must be logged in to load documents.");
+      return;
+    }
+
+    try {
+      setIsLoadingDocuments(true);
+      const result = await getUploadedDocuments(token);
+      setDocuments(result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load documents.");
+    } finally {
+      setIsLoadingDocuments(false);
+    }
+  }
+
+  useEffect(() => {
+    loadDocuments();
+  }, []);
 
   function validateFile(file: File) {
     if (file.type !== "application/pdf") {
@@ -26,6 +61,7 @@ export default function DocumentUploadPage() {
     }
 
     const maxSizeMB = 10;
+
     if (file.size > maxSizeMB * 1024 * 1024) {
       return `File size must be under ${maxSizeMB} MB.`;
     }
@@ -79,40 +115,60 @@ export default function DocumentUploadPage() {
     }
   }
 
-  function simulateUpload() {
+  async function handleUpload() {
     if (!selectedFile) {
       setError("Please select a PDF file first.");
       setStatus("error");
       return;
     }
 
-    setStatus("uploading");
-    setUploadProgress(0);
-    setError("");
+    const token = localStorage.getItem("token");
 
-    const interval = window.setInterval(() => {
-      setUploadProgress((prev) => {
-          if (prev >= 100) {
-              window.clearInterval(interval);
+    if (!token) {
+      setError("You must be logged in to upload documents.");
+      setStatus("error");
+      return;
+    }
 
-              if (selectedFile) {
-                  saveDemoDocument(selectedFile);
-              }
+    try {
+      setStatus("uploading");
+      setUploadProgress(30);
+      setError("");
 
-              setStatus("success");
-              return 100;
-          }
+      await uploadDocument(selectedFile, token);
 
-        return prev + 10;
-      });
-    }, 180);
+      setUploadProgress(100);
+      setStatus("success");
+      setSelectedFile(null);
+
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+
+      await loadDocuments();
+    } catch (err) {
+      setStatus("error");
+      setUploadProgress(0);
+      setError(err instanceof Error ? err.message : "Upload failed.");
+    }
+  }
+async function viewDocument(id: string) {
+  const token = localStorage.getItem("token");
+
+  if (!token) {
+    setError("You must be logged in to view documents.");
+    return;
   }
 
+  try {
+    const result = await getDocumentById(id, token);
+    setSelectedDocument(result);
+  } catch (err) {
+    setError(err instanceof Error ? err.message : "Unable to load document.");
+  }
+}
   return (
-    <AppShell
-      title="Upload Policy PDF"
-      subtitle="Document processing module"
-    >
+    <AppShell title="Upload Policy PDF" subtitle="Document processing module">
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <section className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
           <div className="mb-6">
@@ -120,9 +176,9 @@ export default function DocumentUploadPage() {
               Add a medical or insurance document.
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
-              Upload a sample policy or public medical document. In the next
-              backend stage, this document will be sent to ASP.NET Core, text
-              will be extracted, split into chunks, and prepared for RAG.
+              Upload a sample policy or public medical document. The backend
+              extracts text, splits it into chunks, and stores it in PostgreSQL
+              for later RAG-based search.
             </p>
           </div>
 
@@ -214,84 +270,137 @@ export default function DocumentUploadPage() {
                   </div>
                 </div>
               )}
-
-              {status === "success" && (
-                <div className="mt-5 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-700">
-                  <CheckCircle2 size={20} />
-                  <p>
-                    PDF uploaded successfully. Backend connection will be added
-                    later.
-                  </p>
-                </div>
-              )}
             </div>
           )}
 
-                  <button
-                      onClick={simulateUpload}
-                      disabled={status === "uploading" || status === "success"}
-                      className="mt-6 w-full rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-50"
-                  >
-                      {status === "success" ? "Uploaded" : "Continue Upload"}
-                  </button>
+          {status === "success" && (
+            <div className="mt-5 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-700">
+              <CheckCircle2 size={20} />
+              <p>PDF uploaded successfully and saved to PostgreSQL.</p>
+            </div>
+          )}
+
+          <button
+            onClick={handleUpload}
+            disabled={status === "uploading" || !selectedFile}
+            className="mt-6 w-full rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {status === "uploading" ? "Uploading..." : "Continue Upload"}
+          </button>
         </section>
 
         <section className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
-          <h2 className="text-2xl font-semibold tracking-tight">
-            What happens next?
-          </h2>
+          <div className="mb-5 flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-semibold tracking-tight">
+                Document library
+              </h2>
+              <p className="mt-1 text-sm text-gray-500">
+                Real documents loaded from PostgreSQL.
+              </p>
+            </div>
 
-          <div className="mt-6 space-y-4">
-            {[
-              {
-                step: "1",
-                title: "Upload PDF",
-                text: "The user selects a policy or medical document.",
-              },
-              {
-                step: "2",
-                title: "Extract text",
-                text: "The backend will use a PDF parser to read document text.",
-              },
-              {
-                step: "3",
-                title: "Chunk document",
-                text: "Long text will be split into smaller searchable sections.",
-              },
-              {
-                step: "4",
-                title: "Prepare RAG",
-                text: "Chunks will later be retrieved when the user asks questions.",
-              },
-            ].map((item) => (
-              <div
-                key={item.step}
-                className="flex gap-4 rounded-[1.5rem] bg-[#fbfbfd] p-4"
-              >
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#0071e3] text-sm font-semibold text-white">
-                  {item.step}
-                </div>
-
-                <div>
-                  <p className="font-semibold">{item.title}</p>
-                  <p className="mt-1 text-sm leading-6 text-gray-500">
-                    {item.text}
-                  </p>
-                </div>
-              </div>
-            ))}
+            <button
+              onClick={loadDocuments}
+              className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f7] text-gray-600 transition hover:bg-gray-200"
+            >
+              <RefreshCw
+                size={18}
+                className={isLoadingDocuments ? "animate-spin" : ""}
+              />
+            </button>
           </div>
 
-          <div className="mt-6 rounded-[1.5rem] bg-[#f5f5f7] p-5">
-            <p className="text-sm font-semibold">Safety note</p>
-            <p className="mt-2 text-sm leading-6 text-gray-500">
-              Do not upload real patient records or confidential insurance
-              documents. Use public policy documents or synthetic sample files
-              for this portfolio project.
-            </p>
+          <div className="space-y-3">
+            {isLoadingDocuments ? (
+              <div className="rounded-[1.5rem] bg-[#fbfbfd] p-6 text-sm text-gray-500">
+                Loading documents...
+              </div>
+            ) : documents.length === 0 ? (
+              <div className="rounded-[1.5rem] bg-[#fbfbfd] p-6 text-sm text-gray-500">
+                No uploaded documents yet.
+              </div>
+            ) : (
+              documents.map((document) => (
+                <div
+                  key={document.id}
+                  className="rounded-[1.5rem] border border-gray-100 bg-[#fbfbfd] p-5"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white shadow-sm">
+                      <FileText size={20} className="text-[#0071e3]" />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-semibold">
+                        {document.fileName}
+                      </p>
+
+                      <p className="mt-1 text-xs text-gray-500">
+                        {document.documentType} · {document.chunkCount} chunks
+                      </p>
+
+                      <p className="mt-1 text-xs text-gray-400">
+                        Uploaded{" "}
+                        {new Date(document.uploadedAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => viewDocument(document.id)}
+                    className="mt-4 inline-flex items-center gap-2 rounded-full bg-[#1d1d1f] px-4 py-2 text-xs font-semibold text-white transition hover:bg-black"
+                  >
+                    <Eye size={14} />
+                    View
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </section>
       </div>
+      {selectedDocument && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm">
+    <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-[2rem] bg-white p-6 shadow-2xl">
+      <div className="mb-6 flex items-start justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium text-[#0071e3]">Document details</p>
+          <h2 className="mt-1 text-2xl font-semibold">
+            {selectedDocument.fileName}
+          </h2>
+          <p className="mt-2 text-sm text-gray-500">
+            {selectedDocument.documentType} · {selectedDocument.chunkCount} chunks · Uploaded{" "}
+            {new Date(selectedDocument.uploadedAt).toLocaleString()}
+          </p>
+        </div>
+
+        <button
+          onClick={() => setSelectedDocument(null)}
+          className="rounded-full bg-[#f5f5f7] px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-200"
+        >
+          Close
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {selectedDocument.chunks.map((chunk) => (
+          <div
+            key={chunk.id}
+            className="rounded-[1.5rem] border border-gray-100 bg-[#fbfbfd] p-5"
+          >
+            <p className="mb-2 text-xs font-semibold text-[#0071e3]">
+              Chunk {chunk.chunkIndex} {chunk.sourcePage ? `· ${chunk.sourcePage}` : ""}
+            </p>
+
+            <p className="text-sm leading-6 text-gray-600">
+              {chunk.content}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  </div>
+)}
     </AppShell>
   );
 }

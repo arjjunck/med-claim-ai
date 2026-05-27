@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import {
+  getUploadedDocuments,
+  type DocumentListItem,
+} from "../api/documentApi";
+import {
   Bot,
   FileText,
   Send,
@@ -11,8 +15,6 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
-import type { DemoDocument } from "../types/document";
-import { getDemoDocuments } from "../utils/documentStore";
 
 type ChatMessage = {
   id: number;
@@ -41,20 +43,30 @@ const initialMessages: ChatMessage[] = [
 ];
 
 export default function ChatPage() {
-  const [documents, setDocuments] = useState<DemoDocument[]>([]);
+  const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [activeDocumentId, setActiveDocumentId] = useState("");
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [question, setQuestion] = useState("");
   const [isTyping, setIsTyping] = useState(false);
 
-  useEffect(() => {
-    const savedDocuments = getDemoDocuments();
+useEffect(() => {
+  async function loadDocuments() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return;
+    }
+
+    const savedDocuments = await getUploadedDocuments(token);
     setDocuments(savedDocuments);
 
     if (savedDocuments.length > 0) {
       setActiveDocumentId(savedDocuments[0].id);
     }
-  }, []);
+  }
+
+  loadDocuments();
+}, []);
 
   const activeDocument = documents.find(
     (document) => document.id === activeDocumentId
@@ -174,9 +186,9 @@ export default function ChatPage() {
 
                     <div className="rounded-2xl bg-white p-4 shadow-sm">
                       <p className="text-2xl font-semibold">
-                        {activeDocument.sizeMB}
+                        {activeDocument.documentType}
                       </p>
-                      <p className="text-xs text-gray-500">MB</p>
+                      <p className="text-xs text-gray-500">Type</p>
                     </div>
                   </div>
                 )}

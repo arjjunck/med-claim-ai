@@ -1,5 +1,9 @@
 import { useEffect, useState } from "react";
 import {
+  getUploadedDocuments,
+  type DocumentListItem,
+} from "../api/documentApi";
+import {
   ArrowRight,
   FileText,
   MessageSquare,
@@ -9,9 +13,7 @@ import {
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import StatCard from "../components/StatCard";
-import type { DemoDocument } from "../types/document";
 import type { ClaimResult } from "../types/claim";
-import { getDemoDocuments } from "../utils/documentStore";
 import { getDemoClaims } from "../utils/claimStore";
 
 const actions = [
@@ -36,13 +38,25 @@ const actions = [
 ];
 
 export default function DashboardPage() {
-  const [documents, setDocuments] = useState<DemoDocument[]>([]);
+  const [documents, setDocuments] = useState<DocumentListItem[]>([]);
   const [claims, setClaims] = useState<ClaimResult[]>([]);
 
-  useEffect(() => {
-    setDocuments(getDemoDocuments());
+useEffect(() => {
+  async function loadDashboardData() {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return;
+    }
+
+    const uploadedDocuments = await getUploadedDocuments(token);
+    setDocuments(uploadedDocuments);
+
     setClaims(getDemoClaims());
-  }, []);
+  }
+
+  loadDashboardData();
+}, []);
 
   const highRiskClaims = claims.filter((claim) => claim.riskLevel === "High");
 
@@ -182,7 +196,7 @@ export default function DashboardPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-gray-500">
-                      {document.sizeMB} MB · {document.chunkCount} chunks
+                      {document.documentType} · {document.chunkCount} chunks
                     </p>
                   </div>
                 ))

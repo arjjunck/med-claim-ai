@@ -156,3 +156,8 @@
 /Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/tr/Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 /Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/zh-Hans/Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
 /Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/zh-Hant/Microsoft.CodeAnalysis.Workspaces.MSBuild.resources.dll
+/Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/UglyToad.PdfPig.dll
+/Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/UglyToad.PdfPig.Core.dll
+/Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/UglyToad.PdfPig.Fonts.dll
+/Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/UglyToad.PdfPig.Tokenization.dll
+/Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Api/bin/Debug/net10.0/UglyToad.PdfPig.Tokens.dll

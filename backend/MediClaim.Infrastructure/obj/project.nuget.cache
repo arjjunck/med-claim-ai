@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "JS1ktdlQfTY=",
+  "dgSpecHash": "i9lpMYT5v8k=",
   "success": true,
   "projectFilePath": "/Users/arjun/Documents/medi-claim-ai/med-claim-ai/backend/MediClaim.Infrastructure/MediClaim.Infrastructure.csproj",
   "expectedPackageFiles": [
@@ -59,7 +59,12 @@
     "/Users/arjun/.nuget/packages/system.composition.runtime/9.0.0/system.composition.runtime.9.0.0.nupkg.sha512",
     "/Users/arjun/.nuget/packages/system.composition.typedparts/9.0.0/system.composition.typedparts.9.0.0.nupkg.sha512",
     "/Users/arjun/.nuget/packages/system.memory.data/10.0.3/system.memory.data.10.0.3.nupkg.sha512",
-    "/Users/arjun/.nuget/packages/system.numerics.tensors/10.0.6/system.numerics.tensors.10.0.6.nupkg.sha512"
+    "/Users/arjun/.nuget/packages/system.numerics.tensors/10.0.6/system.numerics.tensors.10.0.6.nupkg.sha512",
+    "/Users/arjun/.nuget/packages/uglytoad.pdfpig/1.7.0-custom-5/uglytoad.pdfpig.1.7.0-custom-5.nupkg.sha512",
+    "/Users/arjun/.nuget/packages/uglytoad.pdfpig.core/1.7.0-custom-5/uglytoad.pdfpig.core.1.7.0-custom-5.nupkg.sha512",
+    "/Users/arjun/.nuget/packages/uglytoad.pdfpig.fonts/1.7.0-custom-5/uglytoad.pdfpig.fonts.1.7.0-custom-5.nupkg.sha512",
+    "/Users/arjun/.nuget/packages/uglytoad.pdfpig.tokenization/1.7.0-custom-5/uglytoad.pdfpig.tokenization.1.7.0-custom-5.nupkg.sha512",
+    "/Users/arjun/.nuget/packages/uglytoad.pdfpig.tokens/1.7.0-custom-5/uglytoad.pdfpig.tokens.1.7.0-custom-5.nupkg.sha512"
   ],
   "logs": []
 }
