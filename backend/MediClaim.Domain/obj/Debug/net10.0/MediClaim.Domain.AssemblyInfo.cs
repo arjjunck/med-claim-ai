@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MediClaim.Domain")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+048c9734577a1c1ad7d7b2e6d55da1a21556c1b3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+88490c0ff1669e80ae8c5961e5ac0bc9373cc7e1")]
 [assembly: System.Reflection.AssemblyProductAttribute("MediClaim.Domain")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MediClaim.Domain")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
