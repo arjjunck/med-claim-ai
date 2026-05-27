@@ -8,16 +8,9 @@ import {
 } from "lucide-react";
 import AppShell from "../components/AppShell";
 import RiskBadge from "../components/RiskBadge";
+import type { ClaimResult } from "../types/claim";
+import { saveDemoClaims } from "../utils/claimStore";
 
-type ClaimResult = {
-  claimNumber: string;
-  patientReference: string;
-  procedureCode: string;
-  amount: number;
-  providerName: string;
-  riskLevel: "Low" | "Medium" | "High";
-  riskReason: string;
-};
 
 const sampleResults: ClaimResult[] = [
   {
@@ -161,6 +154,7 @@ export default function ClaimsUploadPage() {
           window.clearInterval(interval);
           setStatus("success");
           setResults(sampleResults);
+          saveDemoClaims(sampleResults);
           return 100;
         }
 

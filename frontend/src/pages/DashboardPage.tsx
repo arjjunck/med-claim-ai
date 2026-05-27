@@ -10,7 +10,9 @@ import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import StatCard from "../components/StatCard";
 import type { DemoDocument } from "../types/document";
+import type { ClaimResult } from "../types/claim";
 import { getDemoDocuments } from "../utils/documentStore";
+import { getDemoClaims } from "../utils/claimStore";
 
 const actions = [
   {
@@ -35,10 +37,14 @@ const actions = [
 
 export default function DashboardPage() {
   const [documents, setDocuments] = useState<DemoDocument[]>([]);
+  const [claims, setClaims] = useState<ClaimResult[]>([]);
 
   useEffect(() => {
     setDocuments(getDemoDocuments());
+    setClaims(getDemoClaims());
   }, []);
+
+  const highRiskClaims = claims.filter((claim) => claim.riskLevel === "High");
 
   return (
     <AppShell
@@ -51,14 +57,16 @@ export default function DashboardPage() {
           value={documents.length.toString()}
           helper="Policy and medical PDFs"
         />
+
         <StatCard
           label="Claims Reviewed"
-          value="0"
+          value={claims.length.toString()}
           helper="CSV claim records analysed"
         />
+
         <StatCard
           label="High Risk Flags"
-          value="0"
+          value={highRiskClaims.length.toString()}
           helper="Claims requiring review"
         />
       </div>
@@ -125,6 +133,8 @@ export default function DashboardPage() {
                 { label: "Landing page", status: "Done" },
                 { label: "Routing", status: "Done" },
                 { label: "Dashboard layout", status: "Done" },
+                { label: "Document store", status: "Done" },
+                { label: "Claim store", status: "Done" },
                 { label: "Backend connection", status: "Next" },
               ].map((item) => (
                 <div
@@ -173,6 +183,51 @@ export default function DashboardPage() {
 
                     <p className="mt-1 text-xs text-gray-500">
                       {document.sizeMB} MB · {document.chunkCount} chunks
+                    </p>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
+            <h2 className="text-xl font-semibold">Recent risk findings</h2>
+
+            <p className="mt-1 text-sm text-gray-500">
+              Claim risk results saved from the latest CSV analysis.
+            </p>
+
+            <div className="mt-5 space-y-3">
+              {claims.length === 0 ? (
+                <div className="rounded-2xl bg-[#fbfbfd] p-5 text-sm text-gray-500">
+                  No claim analysis completed yet.
+                </div>
+              ) : (
+                claims.slice(0, 3).map((claim, index) => (
+                  <div
+                    key={`${claim.claimNumber}-${index}`}
+                    className="rounded-2xl border border-gray-100 bg-[#fbfbfd] p-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm font-semibold">
+                        {claim.claimNumber}
+                      </p>
+
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                          claim.riskLevel === "High"
+                            ? "bg-red-100 text-red-700"
+                            : claim.riskLevel === "Medium"
+                            ? "bg-amber-100 text-amber-700"
+                            : "bg-emerald-100 text-emerald-700"
+                        }`}
+                      >
+                        {claim.riskLevel}
+                      </span>
+                    </div>
+
+                    <p className="mt-2 text-xs leading-5 text-gray-500">
+                      {claim.riskReason}
                     </p>
                   </div>
                 ))
