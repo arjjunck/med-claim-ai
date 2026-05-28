@@ -559,6 +559,10 @@
               "target": "Package",
               "version": "[2.3.10, )"
             },
+            "Microsoft.SemanticKernel": {
+              "target": "Package",
+              "version": "[1.76.0, )"
+            },
             "System.IdentityModel.Tokens.Jwt": {
               "target": "Package",
               "version": "[8.18.0, )"

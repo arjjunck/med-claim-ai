@@ -1264,6 +1264,7 @@
         "framework": ".NETCoreApp,Version=v10.0",
         "dependencies": {
           "MediClaim.Domain": "1.0.0",
+          "Microsoft.SemanticKernel": "1.76.0",
           "System.IdentityModel.Tokens.Jwt": "8.18.0"
         },
         "compile": {

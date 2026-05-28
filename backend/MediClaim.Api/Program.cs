@@ -17,6 +17,7 @@ builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<TextChunker>();
 builder.Services.AddScoped<ClaimRiskEngine>();
 builder.Services.AddScoped<SimpleChunkSearchService>();
+builder.Services.AddScoped<AiAnswerService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
