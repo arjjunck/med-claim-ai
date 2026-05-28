@@ -69,7 +69,7 @@ public class ClaimsController : ControllerBase
                 PatientReference = row.PatientReference,
                 ProcedureCode = row.ProcedureCode,
                 Amount = row.Amount,
-                ClaimDate = row.ClaimDate,
+                ClaimDate = DateTime.SpecifyKind(row.ClaimDate, DateTimeKind.Utc),
                 ProviderName = row.ProviderName
             };
 

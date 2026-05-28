@@ -13,8 +13,7 @@ import {
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
 import StatCard from "../components/StatCard";
-import type { ClaimResult } from "../types/claim";
-import { getDemoClaims } from "../utils/claimStore";
+import { getClaims, type ClaimResponse } from "../api/claimApi";
 
 const actions = [
   {
@@ -39,7 +38,7 @@ const actions = [
 
 export default function DashboardPage() {
   const [documents, setDocuments] = useState<DocumentListItem[]>([]);
-  const [claims, setClaims] = useState<ClaimResult[]>([]);
+ const [claims, setClaims] = useState<ClaimResponse[]>([]); 
 
 useEffect(() => {
   async function loadDashboardData() {
@@ -52,7 +51,8 @@ useEffect(() => {
     const uploadedDocuments = await getUploadedDocuments(token);
     setDocuments(uploadedDocuments);
 
-    setClaims(getDemoClaims());
+   const uploadedClaims = await getClaims(token);
+  setClaims(uploadedClaims);
   }
 
   loadDashboardData();

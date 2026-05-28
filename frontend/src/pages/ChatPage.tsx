@@ -1,9 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  getUploadedDocuments,
-  type DocumentListItem,
-} from "../api/documentApi";
-import {
   Bot,
   FileText,
   Send,
@@ -15,6 +11,11 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
+import {
+  getUploadedDocuments,
+  type DocumentListItem,
+} from "../api/documentApi";
+import { askDocumentQuestion, getChatHistory } from "../api/chatApi";
 
 type ChatMessage = {
   id: number;
@@ -38,7 +39,7 @@ const initialMessages: ChatMessage[] = [
   {
     id: 1,
     role: "assistant",
-    text: "Upload or select a document, then ask a question. I will answer using only the retrieved document context.",
+    text: "Select an uploaded document, then ask a question. I will search the stored document chunks and return an answer with source references.",
   },
 ];
 
@@ -48,58 +49,87 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages);
   const [question, setQuestion] = useState("");
   const [isTyping, setIsTyping] = useState(false);
+  const [error, setError] = useState("");
 
-useEffect(() => {
-  async function loadDocuments() {
-    const token = localStorage.getItem("token");
+  useEffect(() => {
+    async function loadDocuments() {
+      const token = localStorage.getItem("token");
 
-    if (!token) {
-      return;
+      if (!token) {
+        setError("You must be logged in to load documents.");
+        return;
+      }
+
+      try {
+        const uploadedDocuments = await getUploadedDocuments(token);
+        setDocuments(uploadedDocuments);
+
+        if (uploadedDocuments.length > 0) {
+          setActiveDocumentId(uploadedDocuments[0].id);
+          await loadChatHistory(uploadedDocuments[0].id);
+        }
+      } catch (err) {
+        setError(
+          err instanceof Error ? err.message : "Unable to load documents."
+        );
+      }
     }
 
-    const savedDocuments = await getUploadedDocuments(token);
-    setDocuments(savedDocuments);
-
-    if (savedDocuments.length > 0) {
-      setActiveDocumentId(savedDocuments[0].id);
-    }
-  }
-
-  loadDocuments();
-}, []);
+    loadDocuments();
+  }, []);
 
   const activeDocument = documents.find(
     (document) => document.id === activeDocumentId
   );
+async function loadChatHistory(documentId: string) {
+  const token = localStorage.getItem("token");
 
-  function getSampleAnswer(userQuestion: string): ChatMessage {
-    const documentName = activeDocument?.fileName || "Sample Policy Document";
-
-    return {
-      id: Date.now() + 1,
-      role: "assistant",
-      text: `Based on the selected document context, this question requires review against the relevant coverage and exclusion sections. For this frontend demo, I am showing a simulated RAG answer for: "${userQuestion}". In the backend version, the answer will be generated from retrieved PDF chunks using Semantic Kernel.`,
-      sources: [
-        {
-          title: documentName,
-          page: "Page 2",
-          excerpt:
-            "Coverage applies only where the procedure is listed under eligible treatment categories and supported by required documentation.",
-        },
-        {
-          title: documentName,
-          page: "Page 5",
-          excerpt:
-            "Claims may require additional review where the treatment type, amount, or provider information falls outside normal policy conditions.",
-        },
-      ],
-    };
+  if (!token || !documentId) {
+    return;
   }
 
-  function sendMessage(text?: string) {
+  try {
+    const history = await getChatHistory(documentId, token);
+
+    if (history.length === 0) {
+      setMessages(initialMessages);
+      return;
+    }
+
+    const historyMessages = history.flatMap((item) => [
+      {
+        id: Date.now() + Math.random(),
+        role: "user" as const,
+        text: item.question,
+      },
+      {
+        id: Date.now() + Math.random(),
+        role: "assistant" as const,
+        text: item.answer,
+      },
+    ]);
+
+    setMessages([initialMessages[0], ...historyMessages]);
+  } catch {
+    setMessages(initialMessages);
+  }
+}
+  async function sendMessage(text?: string) {
     const finalQuestion = text || question;
 
     if (!finalQuestion.trim()) {
+      return;
+    }
+
+    if (!activeDocumentId) {
+      setError("Please upload and select a document first.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setError("You must be logged in to ask questions.");
       return;
     }
 
@@ -112,14 +142,42 @@ useEffect(() => {
     setMessages((currentMessages) => [...currentMessages, userMessage]);
     setQuestion("");
     setIsTyping(true);
+    setError("");
 
-    window.setTimeout(() => {
+    try {
+      const response = await askDocumentQuestion(
+        activeDocumentId,
+        finalQuestion,
+        token
+      );
+
+      const assistantMessage: ChatMessage = {
+        id: Date.now() + 1,
+        role: "assistant",
+        text: response.answer,
+        sources: response.sources.map((source) => ({
+          title: activeDocument?.fileName || "Uploaded document",
+          page: source.sourcePage || `Chunk ${source.chunkIndex}`,
+          excerpt: source.content,
+        })),
+      };
+
+      setMessages((currentMessages) => [...currentMessages, assistantMessage]);
+    } catch (err) {
       setMessages((currentMessages) => [
         ...currentMessages,
-        getSampleAnswer(finalQuestion),
+        {
+          id: Date.now() + 1,
+          role: "assistant",
+          text:
+            err instanceof Error
+              ? err.message
+              : "Unable to get an answer from the document.",
+        },
       ]);
+    } finally {
       setIsTyping(false);
-    }, 1200);
+    }
   }
 
   return (
@@ -165,7 +223,12 @@ useEffect(() => {
 
                 <select
                   value={activeDocumentId}
-                  onChange={(event) => setActiveDocumentId(event.target.value)}
+                    onChange={async (event) => {
+                      const documentId = event.target.value;
+                      setActiveDocumentId(documentId);
+                      setError("");
+                      await loadChatHistory(documentId);
+                    }}
                   className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none transition focus:border-[#0071e3] focus:ring-4 focus:ring-blue-100"
                 >
                   {documents.map((document) => (
@@ -196,6 +259,12 @@ useEffect(() => {
             )}
           </div>
 
+          {error && (
+            <div className="rounded-[1.5rem] bg-red-50 p-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
           <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
             <div className="mb-5 flex items-center gap-3">
               <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50">
@@ -204,7 +273,9 @@ useEffect(() => {
 
               <div>
                 <h2 className="text-xl font-semibold">Suggested questions</h2>
-                <p className="text-sm text-gray-500">Click to test the chat UI</p>
+                <p className="text-sm text-gray-500">
+                  Click to ask the selected document
+                </p>
               </div>
             </div>
 
@@ -213,7 +284,8 @@ useEffect(() => {
                 <button
                   key={item}
                   onClick={() => sendMessage(item)}
-                  className="w-full rounded-2xl border border-gray-100 bg-[#fbfbfd] p-4 text-left text-sm font-medium text-gray-700 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md"
+                  disabled={!activeDocumentId || isTyping}
+                  className="w-full rounded-2xl border border-gray-100 bg-[#fbfbfd] p-4 text-left text-sm font-medium text-gray-700 transition hover:-translate-y-0.5 hover:bg-white hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {item}
                 </button>
@@ -232,7 +304,7 @@ useEffect(() => {
               <div>
                 <h2 className="font-semibold">MediClaim Assistant</h2>
                 <p className="text-sm text-gray-500">
-                  Source-grounded answers preview
+                  Backend chunk search + source references
                 </p>
               </div>
             </div>
@@ -265,7 +337,7 @@ useEffect(() => {
                 >
                   <p>{message.text}</p>
 
-                  {message.sources && (
+                  {message.sources && message.sources.length > 0 && (
                     <div className="mt-4 space-y-3">
                       {message.sources.map((source, index) => (
                         <div
@@ -302,7 +374,7 @@ useEffect(() => {
 
                 <div className="flex items-center gap-2 rounded-[1.5rem] bg-white px-4 py-3 text-sm text-gray-500 shadow-sm">
                   <Loader2 size={16} className="animate-spin text-[#0071e3]" />
-                  Thinking with document context...
+                  Searching stored document chunks...
                 </div>
               </div>
             )}
@@ -317,13 +389,15 @@ useEffect(() => {
                   sendMessage();
                 }
               }}
-              className="flex-1 bg-transparent px-4 text-sm outline-none"
+              disabled={!activeDocumentId || isTyping}
+              className="flex-1 bg-transparent px-4 text-sm outline-none disabled:cursor-not-allowed"
               placeholder="Ask a question from the uploaded document..."
             />
 
             <button
               onClick={() => sendMessage()}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0071e3] text-white shadow-md transition hover:scale-105 hover:bg-[#0066cc]"
+              disabled={!activeDocumentId || isTyping}
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-[#0071e3] text-white shadow-md transition hover:scale-105 hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send size={17} />
             </button>

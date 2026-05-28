@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using MediClaim.Application.Documents;
 using MediClaim.Application.Claims;
+using MediClaim.Application.Chat;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add controllers
@@ -15,6 +16,7 @@ builder.Services.AddScoped<PasswordService>();
 builder.Services.AddScoped<JwtTokenService>();
 builder.Services.AddScoped<TextChunker>();
 builder.Services.AddScoped<ClaimRiskEngine>();
+builder.Services.AddScoped<SimpleChunkSearchService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
