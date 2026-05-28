@@ -173,13 +173,21 @@ Approximately 90% Complete
 
 ## Screenshots
 
-Add screenshots of:
-
 * Login Page
+  <img width="1912" height="944" alt="image" src="https://github.com/user-attachments/assets/6b380068-e96b-43d7-821d-168485c2283e" />
+
 * Dashboard
+  <img width="1920" height="946" alt="image" src="https://github.com/user-attachments/assets/512c0c54-3b56-42b0-94e5-67daaff608d1" />
+
 * Document Upload
+  <img width="1917" height="948" alt="image" src="https://github.com/user-attachments/assets/41bffc68-7861-46a4-8392-616ba4e8438e" />
+
 * Claim Analysis
+  <img width="1917" height="952" alt="image" src="https://github.com/user-attachments/assets/cc1ecd8b-1059-4b99-b942-25d8e9a7f7cc" />
+
 * Chat Interface
+  <img width="1918" height="954" alt="image" src="https://github.com/user-attachments/assets/58179908-9225-432b-ab21-f3c1e9da4294" />
+
 
 ---
 
