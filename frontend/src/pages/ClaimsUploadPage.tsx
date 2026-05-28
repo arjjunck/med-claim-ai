@@ -1,85 +1,58 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   AlertCircle,
   Brain,
   CheckCircle2,
   FileSpreadsheet,
+  RefreshCw,
   UploadCloud,
   X,
 } from "lucide-react";
 import AppShell from "../components/AppShell";
 import RiskBadge from "../components/RiskBadge";
 import ExplanationModal from "../components/ExplanationModal";
-import type { ClaimResult } from "../types/claim";
-import { saveDemoClaims } from "../utils/claimStore";
-
-const sampleResults: ClaimResult[] = [
-  {
-    claimNumber: "CLM-1001",
-    patientReference: "P-001",
-    procedureCode: "CONSULT",
-    amount: 120,
-    providerName: "Dublin Clinic",
-    riskLevel: "Low",
-    riskReason: "No major rule-based risk detected.",
-  },
-  {
-    claimNumber: "CLM-1002",
-    patientReference: "P-002",
-    procedureCode: "MRI",
-    amount: 900,
-    providerName: "City Imaging",
-    riskLevel: "Medium",
-    riskReason: "Claim amount may require additional review.",
-  },
-  {
-    claimNumber: "CLM-1002",
-    patientReference: "P-002",
-    procedureCode: "MRI",
-    amount: 900,
-    providerName: "City Imaging",
-    riskLevel: "High",
-    riskReason: "Duplicate claim number found.",
-  },
-  {
-    claimNumber: "CLM-1003",
-    patientReference: "P-003",
-    procedureCode: "DENTAL",
-    amount: 1500,
-    providerName: "Private Dental Centre",
-    riskLevel: "High",
-    riskReason:
-      "High claim amount and procedure may require policy coverage confirmation.",
-  },
-];
+import { getClaims, uploadClaims, type ClaimResponse } from "../api/claimApi";
 
 export default function ClaimsUploadPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [selectedClaim, setSelectedClaim] = useState<ClaimResult | null>(null);
+  const [selectedClaim, setSelectedClaim] = useState<ClaimResponse | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const [status, setStatus] = useState<
-    "idle" | "analysing" | "success" | "error"
-  >("idle");
+  const [status, setStatus] = useState<"idle" | "analysing" | "success" | "error">("idle");
   const [error, setError] = useState("");
   const [progress, setProgress] = useState(0);
-  const [results, setResults] = useState<ClaimResult[]>([]);
+  const [results, setResults] = useState<ClaimResponse[]>([]);
+  const [isLoadingClaims, setIsLoadingClaims] = useState(false);
 
   const totalClaims = results.length;
   const highRisk = results.filter((claim) => claim.riskLevel === "High").length;
-  const mediumRisk = results.filter(
-    (claim) => claim.riskLevel === "Medium"
-  ).length;
+  const mediumRisk = results.filter((claim) => claim.riskLevel === "Medium").length;
   const totalAmount = results.reduce((sum, claim) => sum + claim.amount, 0);
 
-  function validateFile(file: File) {
-    const isCsv =
-      file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
+  async function loadClaims() {
+    const token = localStorage.getItem("token");
+    if (!token) return;
 
-    if (!isCsv) {
-      return "Only CSV files are supported.";
+    try {
+      setIsLoadingClaims(true);
+      const claims = await getClaims(token);
+      setResults(claims);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to load claims.");
+    } finally {
+      setIsLoadingClaims(false);
     }
+  }
+
+  useEffect(() => {
+    loadClaims();
+  }, []);
+
+  function validateFile(file: File) {
+    const isCsv = file.type === "text/csv" || file.name.toLowerCase().endsWith(".csv");
+
+    if (!isCsv) return "Only CSV files are supported.";
 
     const maxSizeMB = 5;
     if (file.size > maxSizeMB * 1024 * 1024) {
@@ -96,7 +69,6 @@ export default function ClaimsUploadPage() {
       setError(validationError);
       setStatus("error");
       setSelectedFile(null);
-      setResults([]);
       return;
     }
 
@@ -104,15 +76,11 @@ export default function ClaimsUploadPage() {
     setStatus("idle");
     setError("");
     setProgress(0);
-    setResults([]);
   }
 
   function handleInputChange(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
-
-    if (file) {
-      handleFile(file);
-    }
+    if (file) handleFile(file);
   }
 
   function handleDrop(event: React.DragEvent<HTMLDivElement>) {
@@ -120,10 +88,7 @@ export default function ClaimsUploadPage() {
     setIsDragging(false);
 
     const file = event.dataTransfer.files?.[0];
-
-    if (file) {
-      handleFile(file);
-    }
+    if (file) handleFile(file);
   }
 
   function removeFile() {
@@ -132,38 +97,49 @@ export default function ClaimsUploadPage() {
     setStatus("idle");
     setError("");
     setProgress(0);
-    setResults([]);
 
     if (inputRef.current) {
       inputRef.current.value = "";
     }
   }
 
-  function simulateAnalysis() {
+  async function handleAnalysis() {
     if (!selectedFile) {
       setError("Please select a CSV file first.");
       setStatus("error");
       return;
     }
 
-    setStatus("analysing");
-    setError("");
-    setProgress(0);
-    setResults([]);
+    const token = localStorage.getItem("token");
 
-    const interval = window.setInterval(() => {
-      setProgress((previous) => {
-        if (previous >= 100) {
-          window.clearInterval(interval);
-          setStatus("success");
-          setResults(sampleResults);
-          saveDemoClaims(sampleResults);
-          return 100;
-        }
+    if (!token) {
+      setError("You must be logged in to analyse claims.");
+      setStatus("error");
+      return;
+    }
 
-        return previous + 10;
-      });
-    }, 180);
+    try {
+      setStatus("analysing");
+      setError("");
+      setProgress(30);
+
+      const response = await uploadClaims(selectedFile, token);
+
+      setProgress(100);
+      setStatus("success");
+      setResults(response.claims);
+      setSelectedFile(null);
+
+      if (inputRef.current) {
+        inputRef.current.value = "";
+      }
+
+      await loadClaims();
+    } catch (err) {
+      setStatus("error");
+      setProgress(0);
+      setError(err instanceof Error ? err.message : "Claim analysis failed.");
+    }
   }
 
   return (
@@ -175,9 +151,9 @@ export default function ClaimsUploadPage() {
               Upload claim records.
             </h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-500">
-              Upload a claim CSV file. For now, this screen simulates risk
-              analysis in the frontend. Later, it will connect to the ASP.NET
-              Core claims API.
+              Upload a claim CSV file. The backend reads the CSV, applies
+              rule-based risk checks, stores the records in PostgreSQL, and
+              returns risk results.
             </p>
           </div>
 
@@ -189,9 +165,7 @@ export default function ClaimsUploadPage() {
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             className={`rounded-[2rem] border-2 border-dashed p-10 text-center transition ${
-              isDragging
-                ? "border-[#0071e3] bg-blue-50"
-                : "border-gray-200 bg-[#fbfbfd]"
+              isDragging ? "border-[#0071e3] bg-blue-50" : "border-gray-200 bg-[#fbfbfd]"
             }`}
           >
             <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-3xl bg-white shadow-sm">
@@ -219,7 +193,7 @@ export default function ClaimsUploadPage() {
             </button>
 
             <p className="mt-4 text-xs text-gray-400">
-              Example columns: claimNumber, patientReference, procedureCode,
+              Required columns: claimNumber, patientReference, procedureCode,
               amount, claimDate, providerName
             </p>
           </div>
@@ -270,25 +244,22 @@ export default function ClaimsUploadPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
 
-              {status === "success" && (
-                <div className="mt-5 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-700">
-                  <CheckCircle2 size={20} />
-                  <p>
-                    Claim file analysed successfully. Sample risk results are
-                    shown on the right.
-                  </p>
-                </div>
-              )}
+          {status === "success" && (
+            <div className="mt-5 flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-700">
+              <CheckCircle2 size={20} />
+              <p>Claim file analysed and saved to PostgreSQL.</p>
             </div>
           )}
 
           <button
-            onClick={simulateAnalysis}
-            disabled={status === "analysing" || status === "success"}
+            onClick={handleAnalysis}
+            disabled={status === "analysing" || !selectedFile}
             className="mt-6 w-full rounded-full bg-[#0071e3] px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:scale-[1.01] hover:bg-[#0066cc] disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {status === "success" ? "Analysed" : "Analyse Claims"}
+            {status === "analysing" ? "Analysing..." : "Analyse Claims"}
           </button>
         </section>
 
@@ -301,9 +272,7 @@ export default function ClaimsUploadPage() {
 
             <div className="rounded-[1.7rem] border border-white/80 bg-white p-5 shadow-sm">
               <p className="text-sm font-medium text-gray-500">High Risk</p>
-              <p className="mt-2 text-3xl font-semibold text-red-600">
-                {highRisk}
-              </p>
+              <p className="mt-2 text-3xl font-semibold text-red-600">{highRisk}</p>
             </div>
 
             <div className="rounded-[1.7rem] border border-white/80 bg-white p-5 shadow-sm">
@@ -322,14 +291,32 @@ export default function ClaimsUploadPage() {
           </div>
 
           <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
-            <div className="mb-5">
-              <h2 className="text-xl font-semibold">Risk results</h2>
-              <p className="mt-1 text-sm text-gray-500">
-                Results will appear after CSV analysis.
-              </p>
+            <div className="mb-5 flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-semibold">Risk results</h2>
+                <p className="mt-1 text-sm text-gray-500">
+                  Real claim records loaded from PostgreSQL.
+                </p>
+              </div>
+
+              <button
+                onClick={loadClaims}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-[#f5f5f7] text-gray-600 transition hover:bg-gray-200"
+              >
+                <RefreshCw
+                  size={18}
+                  className={isLoadingClaims ? "animate-spin" : ""}
+                />
+              </button>
             </div>
 
-            {results.length === 0 ? (
+            {isLoadingClaims ? (
+              <div className="rounded-[1.7rem] bg-[#fbfbfd] p-8 text-center">
+                <p className="text-sm font-medium text-gray-500">
+                  Loading claims...
+                </p>
+              </div>
+            ) : results.length === 0 ? (
               <div className="rounded-[1.7rem] bg-[#fbfbfd] p-8 text-center">
                 <p className="text-sm font-medium text-gray-500">
                   No claim results yet.
@@ -339,7 +326,7 @@ export default function ClaimsUploadPage() {
                 </p>
               </div>
             ) : (
-              <div className="overflow-hidden rounded-[1.5rem] border border-gray-100">
+              <div className="overflow-x-auto rounded-[1.5rem] border border-gray-100">
                 <table className="w-full border-collapse bg-white text-left text-sm">
                   <thead className="bg-[#f5f5f7] text-xs uppercase tracking-wide text-gray-500">
                     <tr>
@@ -353,11 +340,8 @@ export default function ClaimsUploadPage() {
                   </thead>
 
                   <tbody>
-                    {results.map((claim, index) => (
-                      <tr
-                        key={`${claim.claimNumber}-${index}`}
-                        className="border-t border-gray-100"
-                      >
+                    {results.map((claim) => (
+                      <tr key={claim.id} className="border-t border-gray-100">
                         <td className="px-4 py-4 font-medium">
                           {claim.claimNumber}
                         </td>
