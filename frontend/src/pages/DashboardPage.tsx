@@ -8,7 +8,6 @@ import {
   FileText,
   MessageSquare,
   ShieldAlert,
-  UploadCloud,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import AppShell from "../components/AppShell";
@@ -131,53 +130,10 @@ useEffect(() => {
 
         <div className="space-y-5">
           <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
-            <div className="mb-6 flex items-center gap-3">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f5f5f7]">
-                <UploadCloud size={20} className="text-[#0071e3]" />
-              </div>
-
-              <div>
-                <h2 className="text-xl font-semibold">Build progress</h2>
-                <p className="text-sm text-gray-500">Frontend foundation</p>
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              {[
-                { label: "Landing page", status: "Done" },
-                { label: "Routing", status: "Done" },
-                { label: "Dashboard layout", status: "Done" },
-                { label: "Document store", status: "Done" },
-                { label: "Claim store", status: "Done" },
-                { label: "Backend connection", status: "Next" },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="flex items-center justify-between rounded-2xl bg-[#fbfbfd] p-4"
-                >
-                  <p className="text-sm font-medium">{item.label}</p>
-
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      item.status === "Done"
-                        ? "bg-emerald-100 text-emerald-700"
-                        : item.status === "In Progress"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-gray-100 text-gray-600"
-                    }`}
-                  >
-                    {item.status}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="rounded-[2rem] border border-white/80 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-semibold">Recent documents</h2>
 
             <p className="mt-1 text-sm text-gray-500">
-              Uploaded PDFs saved in this demo browser session.
+              Your most recently uploaded PDFs.
             </p>
 
             <div className="mt-5 space-y-3">

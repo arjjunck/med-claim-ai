@@ -1,7 +1,7 @@
 # Run the whole app:  cp .env.example .env  (fill it in), then
 #   docker compose up --build    (build locally)  or
 #   docker compose pull && docker compose up    (use the published Docker Hub images)
-# Frontend: http://localhost:8080   API: http://localhost:5050
+# Frontend: http://localhost:8080 (it forwards /api to the API)   API directly: http://localhost:5050
 services:
   db:
     image: pgvector/pgvector:pg17
@@ -39,8 +39,8 @@ services:
     image: arjjunck/mediclaim-web:latest
     build:
       context: ./frontend
-      args:
-        VITE_API_BASE_URL: http://localhost:5050/api
+    environment:
+      API_UPSTREAM: http://api:8080
     depends_on:
       - api
     ports:
