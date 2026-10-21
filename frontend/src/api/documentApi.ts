@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5283/api";
+import { API_BASE_URL } from "./config";
 
 export type UploadedDocumentResponse = {
   id: string;

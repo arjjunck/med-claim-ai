@@ -135,6 +135,22 @@ Stores document-specific conversations.
 
 ---
 
+## Running with Docker
+
+Requires Docker Desktop (or another Docker engine with Compose).
+
+```bash
+cp .env.example .env   # then fill in NVIDIA_API_KEY, JWT_KEY and POSTGRES_PASSWORD
+docker compose up --build
+```
+
+* Frontend: http://localhost:8080
+* API: http://localhost:5050
+
+This starts three containers: PostgreSQL (with pgvector), the ASP.NET Core API, and the React frontend served by nginx. Database migrations run automatically when the API starts, and data is kept in the `db-data` volume.
+
+---
+
 ## Project Status
 
 ### Version

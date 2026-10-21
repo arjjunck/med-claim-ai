@@ -1,0 +1,46 @@
+# Run the whole app:  cp .env.example .env  (fill it in), then  docker compose up --build
+# Frontend: http://localhost:8080   API: http://localhost:5050
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: mediclaim_ai
+      POSTGRES_USER: mediclaim
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mediclaim -d mediclaim_ai"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build: ./backend
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: Host=db;Port=5432;Database=mediclaim_ai;Username=mediclaim;Password=${POSTGRES_PASSWORD}
+      Database__MigrateOnStartup: "true"
+      OpenAI__ApiKey: ${NVIDIA_API_KEY:?Set NVIDIA_API_KEY in .env}
+      Jwt__Key: ${JWT_KEY:?Set JWT_KEY in .env}
+      Jwt__Issuer: MediClaimAI
+      Jwt__Audience: MediClaimAIUsers
+      Cors__AllowedOrigins__0: http://localhost:8080
+    ports:
+      - "5050:8080"
+
+  web:
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: http://localhost:5050/api
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+
+volumes:
+  db-data:
