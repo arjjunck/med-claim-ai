@@ -17,7 +17,7 @@ namespace MediClaim.Infrastructure.Data.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "9.0.4")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
@@ -150,7 +150,7 @@ namespace MediClaim.Infrastructure.Data.Migrations
                     b.Property<Guid>("DocumentId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("EmbeddingJson")
+                    b.Property<string>("Embedding")
                         .HasColumnType("text");
 
                     b.Property<string>("SourcePage")

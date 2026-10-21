@@ -1,0 +1,16 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Host=localhost;Port=5432;Database=mediclaim_ai;Username=postgres;Password=postgres"
+  },
+  "OpenAI": {
+  "ApiKey": "REMOVED_API_KEY",
+  "BaseUrl": "https://integrate.api.nvidia.com/v1/embeddings",
+  "EmbeddingModel": "nvidia/nemotron-3.5-embed-1b",
+  "Model": "gpt-4o-mini"
+  },
+  "Jwt": {
+    "Key": "your-existing-jwt-secret-key"
+  }
+}
+dotnet ef migrations add ResizeEmbeddingTo1024 --project MediClaim.Infrastructure --startup-project MediClaim.Api
+

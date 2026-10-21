@@ -12,7 +12,7 @@ public class DocumentChunk
 
     public string? SourcePage { get; set; }
 
-    public string? EmbeddingJson { get; set; }
+    public float[]? Embedding { get; set; }
 
     public UploadedDocument? Document { get; set; }
 }

@@ -18,6 +18,8 @@ builder.Services.AddScoped<TextChunker>();
 builder.Services.AddScoped<ClaimRiskEngine>();
 builder.Services.AddScoped<SimpleChunkSearchService>();
 builder.Services.AddScoped<AiAnswerService>();
+builder.Services.AddScoped<EmbeddingService>();
+builder.Services.AddScoped<MediClaim.Infrastructure.Search.VectorSearchService>();
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
