@@ -53,21 +53,25 @@ public class DocumentsController : ControllerBase
         if (string.IsNullOrWhiteSpace(extractedText))
             return BadRequest("No readable text could be extracted from the PDF.");
 
-        var chunks = _textChunker.Chunk(extractedText);
+        var chunks = _textChunker.ChunkWithPages(extractedText);
+
+        // Page markers alone (e.g. a scanned PDF) produce no chunks
+        if (chunks.Count == 0)
+            return BadRequest("No readable text could be extracted from the PDF.");
 
         // Generate embeddings for all chunks in one batch call
-        var embeddings = await _embeddingService.EmbedBatchAsync(chunks);
+        var embeddings = await _embeddingService.EmbedBatchAsync(chunks.Select(c => c.Content).ToList());
 
         var document = new UploadedDocument
         {
             UserId = userId,
             FileName = file.FileName,
             DocumentType = "Policy",
-            Chunks = chunks.Select((content, index) => new DocumentChunk
+            Chunks = chunks.Select((chunk, index) => new DocumentChunk
             {
                 ChunkIndex = index + 1,
-                Content = content,
-                SourcePage = "Unknown",
+                Content = chunk.Content,
+                SourcePage = chunk.SourcePage ?? "Unknown",
                 Embedding = embeddings[index]
             }).ToList()
         };

@@ -1,57 +1,69 @@
 using Microsoft.Extensions.Configuration;
-using Microsoft.SemanticKernel;
-using Microsoft.SemanticKernel.ChatCompletion;
-using MediClaim.Application.Chat;
+using System.Net.Http.Json;
+using System.Text.Json;
 
 namespace MediClaim.Application.Chat;
 
 public class AiAnswerService
 {
-    private readonly Kernel _kernel;
+    private readonly HttpClient _http;
+    private readonly string _model;
+    private readonly string _baseUrl;
 
     public AiAnswerService(IConfiguration configuration)
     {
-        var apiKey = configuration["OpenAI:ApiKey"];
-        var model = configuration["OpenAI:Model"] ?? "gpt-4o-mini";
-
-        var builder = Kernel.CreateBuilder();
-        builder.AddOpenAIChatCompletion(modelId: model, apiKey: apiKey!);
-
-        _kernel = builder.Build();
+        _http = new HttpClient();
+        _http.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue(
+                "Bearer", configuration["OpenAI:ApiKey"]);
+        _model = configuration["OpenAI:Model"] ?? "nvidia/nemotron-3.5-lightning-30b-a3b";
+        _baseUrl = configuration["OpenAI:ChatUrl"] ?? "https://integrate.api.nvidia.com/v1/chat/completions";
     }
 
-    public async Task<string> GenerateAnswerAsync(
-        string question,
-        string context)
+    public async Task<string> GenerateAnswerAsync(string question, string context)
     {
-        var chatService = _kernel.GetRequiredService<IChatCompletionService>();
+        var payload = new
+        {
+            model = _model,
+            messages = new[]
+            {
+                new { role = "system", content = """
+                    You are MediClaim AI, a medical insurance document assistant.
+                    Rules:
+                    - Answer only using the provided document context.
+                    - Do not invent details.
+                    - If the answer is not in the context, say you cannot find it in the document.
+                    - Use clear, professional language.
+                    - Do not make final medical, legal, or claim approval decisions.
+                    - Keep the answer concise.
+                    """ },
+                new { role = "user", content = $"Document context:\n{context}\n\nUser question:\n{question}\n\nProvide a helpful answer based only on the document context." }
+            },
+            // Reasoning models spend part of this budget on reasoning before the answer.
+            max_tokens = 4096,
+            temperature = 0.2
+        };
 
-        var chatHistory = new ChatHistory();
+        var response = await _http.PostAsJsonAsync(_baseUrl, payload);
+        if (!response.IsSuccessStatusCode)
+        {
+            var body = await response.Content.ReadAsStringAsync();
+            throw new HttpRequestException(
+                $"AI provider returned {(int)response.StatusCode} for model '{_model}': {body}",
+                null,
+                response.StatusCode);
+        }
 
-        chatHistory.AddSystemMessage("""
-        You are MediClaim AI, a medical insurance document assistant.
+        using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+        var message = doc.RootElement.GetProperty("choices")[0].GetProperty("message");
 
-        Rules:
-        - Answer only using the provided document context.
-        - Do not invent details.
-        - If the answer is not in the context, say you cannot find it in the document.
-        - Use clear, professional language.
-        - Do not make final medical, legal, or claim approval decisions.
-        - Keep the answer concise.
-        """);
+        var content = message.TryGetProperty("content", out var contentElement) &&
+                      contentElement.ValueKind == JsonValueKind.String
+            ? contentElement.GetString()
+            : null;
 
-        chatHistory.AddUserMessage($"""
-        Document context:
-        {context}
-
-        User question:
-        {question}
-
-        Provide a helpful answer based only on the document context.
-        """);
-
-        var response = await chatService.GetChatMessageContentAsync(chatHistory);
-
-        return response.Content ?? "I could not generate an answer from the document context.";
+        return string.IsNullOrWhiteSpace(content)
+            ? "I could not generate an answer from the document context."
+            : content.Trim();
     }
 }
