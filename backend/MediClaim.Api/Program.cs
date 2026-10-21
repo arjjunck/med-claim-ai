@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using MediClaim.Application.Documents;
 using MediClaim.Application.Claims;
 using MediClaim.Application.Chat;
+using MediClaim.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add controllers
@@ -58,19 +60,29 @@ builder.Services.AddSwaggerGen(options =>
         Description = "Paste your JWT token here."
     });
 });
-// Allow React frontend during local development
+// Allow the React frontend (local dev by default; set Cors:AllowedOrigins to override)
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>()
+    ?? new[] { "http://localhost:5173" };
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("ReactClient", policy =>
     {
         policy
-            .WithOrigins("http://localhost:5173")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod();
     });
 });
 
 var app = builder.Build();
+
+// Apply EF Core migrations on startup when enabled (used by Docker)
+if (app.Configuration.GetValue<bool>("Database:MigrateOnStartup"))
+{
+    using var scope = app.Services.CreateScope();
+    scope.ServiceProvider.GetRequiredService<MediClaimDbContext>().Database.Migrate();
+}
 
 if (app.Environment.IsDevelopment())
 {

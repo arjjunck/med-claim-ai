@@ -16,6 +16,7 @@ dist/
 # Local secrets
 .env
 .env.*
+!.env.example
 
 # Editor backups
 *.save
