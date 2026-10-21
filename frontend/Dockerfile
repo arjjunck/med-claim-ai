@@ -1,5 +1,5 @@
-# Build
-FROM node:24-alpine AS build
+# Build (static output, so it runs natively on the build machine)
+FROM --platform=$BUILDPLATFORM node:24-alpine AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci

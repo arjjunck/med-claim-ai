@@ -1,4 +1,6 @@
-# Run the whole app:  cp .env.example .env  (fill it in), then  docker compose up --build
+# Run the whole app:  cp .env.example .env  (fill it in), then
+#   docker compose up --build    (build locally)  or
+#   docker compose pull && docker compose up    (use the published Docker Hub images)
 # Frontend: http://localhost:8080   API: http://localhost:5050
 services:
   db:
@@ -16,6 +18,7 @@ services:
       retries: 10
 
   api:
+    image: arjjunck/mediclaim-api:latest
     build: ./backend
     depends_on:
       db:
@@ -33,6 +36,7 @@ services:
       - "5050:8080"
 
   web:
+    image: arjjunck/mediclaim-web:latest
     build:
       context: ./frontend
       args:
