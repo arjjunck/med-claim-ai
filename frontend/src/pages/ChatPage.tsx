@@ -16,6 +16,7 @@ import {
   type DocumentListItem,
 } from "../api/documentApi";
 import { askDocumentQuestion, getChatHistory } from "../api/chatApi";
+import { formatSourcePage } from "../utils/formatSourcePage";
 
 type ChatMessage = {
   id: number;
@@ -157,7 +158,7 @@ async function loadChatHistory(documentId: string) {
         text: response.answer,
         sources: response.sources.map((source) => ({
           title: activeDocument?.fileName || "Uploaded document",
-          page: source.sourcePage || `Chunk ${source.chunkIndex}`,
+          page: formatSourcePage(source.sourcePage) ?? `Chunk ${source.chunkIndex}`,
           excerpt: source.content,
         })),
       };

@@ -8,6 +8,7 @@ import {
   X,
 } from "lucide-react";
 import AppShell from "../components/AppShell";
+import { formatSourcePage } from "../utils/formatSourcePage";
 import { Eye } from "lucide-react";
 import {
   getDocumentById,
@@ -389,7 +390,8 @@ async function viewDocument(id: string) {
             className="rounded-[1.5rem] border border-gray-100 bg-[#fbfbfd] p-5"
           >
             <p className="mb-2 text-xs font-semibold text-[#0071e3]">
-              Chunk {chunk.chunkIndex} {chunk.sourcePage ? `· ${chunk.sourcePage}` : ""}
+              Chunk {chunk.chunkIndex}
+              {formatSourcePage(chunk.sourcePage) ? ` · ${formatSourcePage(chunk.sourcePage)}` : ""}
             </p>
 
             <p className="text-sm leading-6 text-gray-600">
