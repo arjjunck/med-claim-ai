@@ -20,6 +20,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\MediClaim.Application\MediClaim.Application.csproj" />
+    <ProjectReference Include="..\MediClaim.Infrastructure\MediClaim.Infrastructure.csproj" />
   </ItemGroup>
 
 </Project>
