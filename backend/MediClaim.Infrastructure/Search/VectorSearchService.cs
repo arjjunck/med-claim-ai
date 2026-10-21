@@ -18,18 +18,28 @@ public class VectorSearchService
         Guid documentId,
         int topK = 5)
     {
-        return await _db.DocumentChunks
-            .FromSqlRaw(
-                """
-                SELECT * FROM "DocumentChunks"
-                WHERE "DocumentId" = {0}
-                  AND "Embedding" IS NOT NULL
-                ORDER BY "Embedding" <=> {1}::vector
-                LIMIT {2}
-                """,
-                documentId,
-                "[" + string.Join(",", queryEmbedding) + "]",
-                topK)
+        var chunks = await _db.DocumentChunks
+            .Where(c => c.DocumentId == documentId && c.Embedding != null)
             .ToListAsync();
+
+        return chunks
+            .Select(c => (chunk: c, score: CosineSimilarity(queryEmbedding, c.Embedding!)))
+            .OrderByDescending(x => x.score)
+            .Take(topK)
+            .Select(x => x.chunk)
+            .ToList();
+    }
+
+    private static float CosineSimilarity(float[] a, float[] b)
+    {
+        if (a.Length != b.Length) return 0f;
+        float dot = 0, magA = 0, magB = 0;
+        for (int i = 0; i < a.Length; i++)
+        {
+            dot += a[i] * b[i];
+            magA += a[i] * a[i];
+            magB += b[i] * b[i];
+        }
+        return (magA == 0 || magB == 0) ? 0f : dot / (MathF.Sqrt(magA) * MathF.Sqrt(magB));
     }
 }

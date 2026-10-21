@@ -20,19 +20,22 @@ public class ChatController : ControllerBase
     private readonly AiAnswerService _aiAnswerService;
     private readonly EmbeddingService _embeddingService;
     private readonly VectorSearchService _vectorSearchService;
+    private readonly ILogger<ChatController> _logger;
 
     public ChatController(
         MediClaimDbContext db,
         SimpleChunkSearchService chunkSearchService,
         AiAnswerService aiAnswerService,
         EmbeddingService embeddingService,
-        VectorSearchService vectorSearchService)
+        VectorSearchService vectorSearchService,
+        ILogger<ChatController> logger)
     {
         _db = db;
         _chunkSearchService = chunkSearchService;
         _aiAnswerService = aiAnswerService;
         _embeddingService = embeddingService;
         _vectorSearchService = vectorSearchService;
+        _logger = logger;
     }
 
     [HttpPost("ask")]
@@ -58,8 +61,16 @@ public class ChatController : ControllerBase
         var hasEmbeddings = document.Chunks.Any(c => c.Embedding != null);
         if (hasEmbeddings)
         {
-            var queryEmbedding = await _embeddingService.EmbedAsync(request.Question);
-            matchedChunks = await _vectorSearchService.SearchAsync(queryEmbedding, document.Id, topK: 5);
+            try
+            {
+                var queryEmbedding = await _embeddingService.EmbedAsync(request.Question);
+                matchedChunks = await _vectorSearchService.SearchAsync(queryEmbedding, document.Id, topK: 5);
+            }
+            catch (HttpRequestException ex)
+            {
+                _logger.LogWarning(ex, "Embedding request failed; falling back to keyword search.");
+                matchedChunks = _chunkSearchService.Search(request.Question, document.Chunks.ToList());
+            }
         }
         else
         {
@@ -77,7 +88,17 @@ public class ChatController : ControllerBase
         var context = string.Join("\n\n", matchedChunks.Select(chunk =>
             $"Chunk {chunk.ChunkIndex}: {chunk.Content}"));
 
-        var answer = await _aiAnswerService.GenerateAnswerAsync(request.Question, context);
+        string answer;
+        try
+        {
+            answer = await _aiAnswerService.GenerateAnswerAsync(request.Question, context);
+        }
+        catch (HttpRequestException ex)
+        {
+            _logger.LogError(ex, "AI answer generation failed.");
+            return StatusCode(StatusCodes.Status502BadGateway,
+                "The AI service is currently unavailable. Please try again later.");
+        }
 
         var chatHistory = new ChatHistory
         {
