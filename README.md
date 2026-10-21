@@ -1,6 +1,10 @@
 # MediClaim AI
 
-An AI-powered medical document assistant and claim risk analysis platform designed to help users upload insurance policies, analyse claims, retrieve relevant information from documents, and interact with policy content through a Retrieval-Augmented Generation (RAG) workflow.
+An AI-powered medical document assistant and claim risk analysis platform. Upload insurance policies, ask questions about them and get answers grounded in the document with page-level citations, and analyse claim files for risk, all through a Retrieval-Augmented Generation (RAG) workflow.
+
+**Live demo:** https://mediclaim-web.thankfulflower-e7d8ef35.switzerlandnorth.azurecontainerapps.io
+
+> The demo is public. Please use sample documents only (for example `Testing/MediClaim_AI_Test_Policy_Document.pdf` and `Testing/mediclaim_backend_test_claims.csv`) and never upload real medical or personal data.
 
 ---
 
@@ -11,11 +15,9 @@ MediClaim AI combines document management, claims analytics, and AI-assisted doc
 The application allows users to:
 
 * Upload medical and insurance policy documents (PDF)
-* Extract and process document content automatically
-* Store searchable document chunks in PostgreSQL
-* Upload claim datasets (CSV)
-* Perform automated claim risk assessment
-* Interact with uploaded documents through a document-grounded chat interface
+* Extract, chunk and embed document content automatically
+* Ask questions and get answers grounded in the document, with page citations
+* Upload claim datasets (CSV) and get automated risk assessments
 * View dashboards summarising document and claim activity
 
 ---
@@ -35,8 +37,13 @@ The application allows users to:
 * ASP.NET Core Web API (.NET 10)
 * Entity Framework Core
 * JWT Authentication
-* Semantic Kernel Integration
 * REST API Architecture
+
+### AI
+
+* NVIDIA NIM API
+* `nvidia/nemotron-3.5-embed-1b` for embeddings
+* `nvidia/nemotron-3.5-lightning-30b-a3b` for answer generation
 
 ### Database
 
@@ -45,7 +52,14 @@ The application allows users to:
 ### Document Processing
 
 * PdfPig
-* Custom Chunking Engine
+* Custom chunking engine with page tracking
+
+### Deployment
+
+* Docker and Docker Compose
+* nginx (serves the frontend and forwards `/api` to the backend)
+* Azure Container Apps
+* Azure Database for PostgreSQL
 
 ---
 
@@ -78,9 +92,10 @@ The application allows users to:
 ### AI Assistant
 
 * Document-Based Question Answering
-* Source Referencing
+* Embedding-Based Retrieval
+* Page-Level Source Citations
 * Chat History Storage
-* Retrieval-Augmented Generation (RAG)
+* Keyword Search Fallback
 
 ### Dashboard
 
@@ -91,23 +106,29 @@ The application allows users to:
 
 ---
 
-## Current Architecture
+## How It Works
 
-User Uploads PDF
+**When a PDF is uploaded**
+
+User uploads PDF
 ↓
-Text Extraction
+Text extracted page by page
 ↓
-Document Chunking
+Split into overlapping chunks, each tagged with its page(s)
 ↓
-PostgreSQL Storage
+Each chunk embedded with NVIDIA Nemotron
 ↓
-Question Submitted
+Chunks and embeddings stored in PostgreSQL
+
+**When a question is asked**
+
+Question embedded with NVIDIA Nemotron
 ↓
-Relevant Chunks Retrieved
+Most similar chunks retrieved (cosine similarity)
 ↓
-AI Answer Generated
+Answer generated from those chunks only
 ↓
-Sources Displayed
+Answer shown with its source pages
 
 ---
 
@@ -123,7 +144,7 @@ Stores uploaded PDF metadata.
 
 ### Document Chunks
 
-Stores chunked document content.
+Stores chunked document content, page numbers and embeddings.
 
 ### Claims
 
@@ -135,9 +156,7 @@ Stores document-specific conversations.
 
 ---
 
-## Live Demo
-
-https://mediclaim-web.thankfulflower-e7d8ef35.switzerlandnorth.azurecontainerapps.io
+## Live Deployment
 
 Hosted on Azure (Switzerland North) using Azure for Students:
 
@@ -151,17 +170,53 @@ The first request after a quiet period can take a few seconds while the API star
 
 ## Running with Docker
 
-Requires Docker Desktop (or another Docker engine with Compose).
+Requires Docker Desktop (or another Docker engine with Compose) and an NVIDIA API key from [build.nvidia.com](https://build.nvidia.com).
 
 ```bash
 cp .env.example .env   # then fill in NVIDIA_API_KEY, JWT_KEY and POSTGRES_PASSWORD
 docker compose up --build
 ```
 
-* Frontend: http://localhost:8080
-* API: http://localhost:5050
+* App: http://localhost:8080
+* API (direct): http://localhost:5050
 
-This starts three containers: PostgreSQL (with pgvector), the ASP.NET Core API, and the React frontend served by nginx. Database migrations run automatically when the API starts, and data is kept in the `db-data` volume.
+This starts three containers: PostgreSQL, the ASP.NET Core API, and the React frontend served by nginx. Database migrations run automatically when the API starts, and data is kept in the `db-data` volume.
+
+To use the published images instead of building them: `docker compose pull && docker compose up`.
+
+---
+
+## Running Locally (without Docker)
+
+Requires the .NET 10 SDK, Node.js 24, a local PostgreSQL database and an NVIDIA API key.
+
+**Backend**
+
+```bash
+cd backend
+dotnet user-secrets set "OpenAI:ApiKey" "YOUR_NVIDIA_KEY" --project MediClaim.Api
+dotnet ef database update --project MediClaim.Infrastructure --startup-project MediClaim.Api
+dotnet run --project MediClaim.Api
+```
+
+The API runs on http://localhost:5283. Set your database connection in `backend/MediClaim.Api/appsettings.Development.json`.
+
+**Frontend**
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+The app runs on http://localhost:5173 and calls the API at http://localhost:5283/api.
+
+**Tests**
+
+```bash
+cd backend
+dotnet test
+```
 
 ---
 
@@ -169,11 +224,7 @@ This starts three containers: PostgreSQL (with pgvector), the ASP.NET Core API, 
 
 ### Version
 
-v1.0.0
-
-### Completion Status
-
-Approximately 90% Complete
+v1.1.0
 
 ### Implemented
 
@@ -186,7 +237,7 @@ Approximately 90% Complete
 * Claim Analysis Engine
 * Dashboard Analytics
 * Chat System
-* Basic RAG Workflow
+* RAG Workflow
 * Embedding-based retrieval (NVIDIA Nemotron)
 * Page-level source citations
 * Docker support (images on Docker Hub)
@@ -194,9 +245,9 @@ Approximately 90% Complete
 
 ### Planned Improvements
 
-* Semantic Search
-* Vector Database Integration
-* Evaluation Framework
+* Move similarity search into the database with pgvector (it is currently calculated in the API)
+* Evaluation framework to measure answer accuracy
+* CI pipeline with GitHub Actions (tests and Docker image builds)
 
 ---
 
@@ -217,16 +268,21 @@ Approximately 90% Complete
 * Chat Interface
   <img width="1918" height="954" alt="image" src="https://github.com/user-attachments/assets/58179908-9225-432b-ab21-f3c1e9da4294" />
 
-
 ---
 
 ## Disclaimer
 
-This project is intended for educational, research, and portfolio purposes. It does not replace professional medical, legal, insurance, or claims review processes.
+This project is intended for educational, research, and portfolio purposes. It does not replace professional medical, legal, insurance, or claims review processes. AI-generated answers can be wrong, so always check them against the source document.
+
+Do not upload real medical, insurance or personal data to the live demo.
 
 ---
 
 ## Author
+
+**Arjun Krishna Krishnakumar**
+
+* GitHub: [@arjjunck](https://github.com/arjjunck)
 
 Developed as part of an AI and Business Analytics portfolio project.
 
