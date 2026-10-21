@@ -1,0 +1,21 @@
+# .NET build output
+bin/
+obj/
+*.user
+.vs/
+
+# Frontend
+node_modules/
+dist/
+
+# OS / editor
+.DS_Store
+.Rhistory
+.vscode/
+
+# Local secrets
+.env
+.env.*
+
+# Editor backups
+*.save
