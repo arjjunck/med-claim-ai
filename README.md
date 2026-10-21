@@ -135,6 +135,20 @@ Stores document-specific conversations.
 
 ---
 
+## Live Demo
+
+https://mediclaim-web.thankfulflower-e7d8ef35.switzerlandnorth.azurecontainerapps.io
+
+Hosted on Azure (Switzerland North) using Azure for Students:
+
+* **Frontend:** Azure Container Apps running `arjjunck/mediclaim-web` (public HTTPS). nginx serves the React app and forwards `/api` to the API.
+* **API:** Azure Container Apps running `arjjunck/mediclaim-api`, internal only, and scales to zero when idle.
+* **Database:** Azure Database for PostgreSQL Flexible Server (B1ms).
+
+The first request after a quiet period can take a few seconds while the API starts up.
+
+---
+
 ## Running with Docker
 
 Requires Docker Desktop (or another Docker engine with Compose).
@@ -173,16 +187,15 @@ Approximately 90% Complete
 * Dashboard Analytics
 * Chat System
 * Basic RAG Workflow
+* Embedding-based retrieval (NVIDIA Nemotron)
+* Page-level source citations
+* Docker support (images on Docker Hub)
+* Azure deployment (Container Apps + PostgreSQL)
 
 ### Planned Improvements
 
 * Semantic Search
 * Vector Database Integration
-* Embeddings
-* Better Citations
-* Production Deployment
-* Docker Support
-* Azure Hosting
 * Evaluation Framework
 
 ---
