@@ -1,0 +1,31 @@
+# Rendered at container start by the nginx image (envsubst): set API_UPSTREAM,
+# e.g. http://api:8080 in Docker Compose or the API's internal URL in Azure.
+server {
+    listen 80;
+    root /usr/share/nginx/html;
+    index index.html;
+
+    # PDF and CSV uploads
+    client_max_body_size 20m;
+
+    # The browser calls /api on this same origin; nginx forwards it to the API.
+    location /api/ {
+        proxy_pass ${API_UPSTREAM};
+        proxy_set_header Host $proxy_host;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_ssl_server_name on;
+        proxy_read_timeout 120s;
+    }
+
+    # React Router: serve index.html for app routes like /chat
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    # Hashed build assets can be cached for a long time
+    location /assets/ {
+        expires 1y;
+        add_header Cache-Control "public, immutable";
+    }
+}
