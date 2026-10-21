@@ -13,5 +13,7 @@ RUN npm run build
 FROM nginx:1.27-alpine
 COPY templates/ /etc/nginx/templates/
 ENV API_UPSTREAM=http://api:8080
+# Lets the template use the container's DNS servers ($NGINX_LOCAL_RESOLVERS)
+ENV NGINX_ENTRYPOINT_LOCAL_RESOLVERS=1
 COPY --from=build /app/dist /usr/share/nginx/html
 EXPOSE 80

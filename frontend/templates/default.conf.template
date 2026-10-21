@@ -8,9 +8,14 @@ server {
     # PDF and CSV uploads
     client_max_body_size 20m;
 
+    # Resolve the API host per request (not only at startup), so nginx starts
+    # even if the API isn't reachable yet and follows its address if it changes.
+    resolver ${NGINX_LOCAL_RESOLVERS} valid=30s ipv6=off;
+
     # The browser calls /api on this same origin; nginx forwards it to the API.
     location /api/ {
-        proxy_pass ${API_UPSTREAM};
+        set $api_upstream ${API_UPSTREAM};
+        proxy_pass $api_upstream;
         proxy_set_header Host $proxy_host;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
