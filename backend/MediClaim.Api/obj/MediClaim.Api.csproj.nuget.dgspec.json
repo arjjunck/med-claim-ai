@@ -65,7 +65,11 @@
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.8, )"
+              "version": "[9.0.4, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[9.0.4, )"
             },
             "Swashbuckle.AspNetCore": {
               "target": "Package",
@@ -562,6 +566,14 @@
             "Microsoft.SemanticKernel": {
               "target": "Package",
               "version": "[1.76.0, )"
+            },
+            "Npgsql.EntityFrameworkCore.PostgreSQL": {
+              "target": "Package",
+              "version": "[9.0.4, )"
+            },
+            "Pgvector": {
+              "target": "Package",
+              "version": "[0.3.1, )"
             },
             "System.IdentityModel.Tokens.Jwt": {
               "target": "Package",
@@ -1249,13 +1261,13 @@
             },
             "Microsoft.EntityFrameworkCore": {
               "target": "Package",
-              "version": "[10.0.8, )"
+              "version": "[9.0.4, )"
             },
             "Microsoft.EntityFrameworkCore.Design": {
               "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
               "suppressParent": "All",
               "target": "Package",
-              "version": "[10.0.8, )"
+              "version": "[9.0.4, )"
             },
             "Microsoft.SemanticKernel": {
               "target": "Package",
@@ -1263,7 +1275,11 @@
             },
             "Npgsql.EntityFrameworkCore.PostgreSQL": {
               "target": "Package",
-              "version": "[10.0.1, )"
+              "version": "[9.0.4, )"
+            },
+            "Pgvector": {
+              "target": "Package",
+              "version": "[0.3.1, )"
             },
             "UglyToad.PdfPig": {
               "target": "Package",

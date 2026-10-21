@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using MediClaim.Application.Chat;
 using MediClaim.Application.Documents;
 using MediClaim.Domain.Entities;
 using MediClaim.Infrastructure.Data;
@@ -17,49 +18,45 @@ public class DocumentsController : ControllerBase
     private readonly MediClaimDbContext _db;
     private readonly PdfTextExtractor _pdfTextExtractor;
     private readonly TextChunker _textChunker;
+    private readonly EmbeddingService _embeddingService;
 
     public DocumentsController(
         MediClaimDbContext db,
         PdfTextExtractor pdfTextExtractor,
-        TextChunker textChunker)
+        TextChunker textChunker,
+        EmbeddingService embeddingService)
     {
         _db = db;
         _pdfTextExtractor = pdfTextExtractor;
         _textChunker = textChunker;
+        _embeddingService = embeddingService;
     }
 
     [HttpPost("upload")]
     public async Task<IActionResult> Upload(IFormFile file)
     {
         if (file.Length == 0)
-        {
             return BadRequest("Uploaded file is empty.");
-        }
 
         if (!file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase))
-        {
             return BadRequest("Only PDF files are supported.");
-        }
 
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
         if (string.IsNullOrWhiteSpace(userIdValue))
-        {
             return Unauthorized("User ID was not found in token.");
-        }
 
         var userId = Guid.Parse(userIdValue);
 
         await using var stream = file.OpenReadStream();
-
         var extractedText = _pdfTextExtractor.ExtractText(stream);
 
         if (string.IsNullOrWhiteSpace(extractedText))
-        {
             return BadRequest("No readable text could be extracted from the PDF.");
-        }
 
         var chunks = _textChunker.Chunk(extractedText);
+
+        // Generate embeddings for all chunks in one batch call
+        var embeddings = await _embeddingService.EmbedBatchAsync(chunks);
 
         var document = new UploadedDocument
         {
@@ -70,7 +67,8 @@ public class DocumentsController : ControllerBase
             {
                 ChunkIndex = index + 1,
                 Content = content,
-                SourcePage = "Unknown"
+                SourcePage = "Unknown",
+                Embedding = embeddings[index]
             }).ToList()
         };
 
@@ -91,11 +89,8 @@ public class DocumentsController : ControllerBase
     public async Task<IActionResult> GetMyDocuments()
     {
         var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
-
         if (string.IsNullOrWhiteSpace(userIdValue))
-        {
             return Unauthorized("User ID was not found in token.");
-        }
 
         var userId = Guid.Parse(userIdValue);
 
@@ -114,46 +109,42 @@ public class DocumentsController : ControllerBase
 
         return Ok(documents);
     }
-[HttpGet("{id:guid}")]
-public async Task<IActionResult> GetDocumentById(Guid id)
-{
-    var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-    if (string.IsNullOrWhiteSpace(userIdValue))
+    [HttpGet("{id:guid}")]
+    public async Task<IActionResult> GetDocumentById(Guid id)
     {
-        return Unauthorized("User ID was not found in token.");
+        var userIdValue = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (string.IsNullOrWhiteSpace(userIdValue))
+            return Unauthorized("User ID was not found in token.");
+
+        var userId = Guid.Parse(userIdValue);
+
+        var document = await _db.Documents
+            .Where(document => document.Id == id && document.UserId == userId)
+            .Select(document => new
+            {
+                document.Id,
+                document.FileName,
+                document.DocumentType,
+                document.UploadedAt,
+                ChunkCount = document.Chunks.Count,
+                Chunks = document.Chunks
+                    .OrderBy(chunk => chunk.ChunkIndex)
+                    .Take(5)
+                    .Select(chunk => new
+                    {
+                        chunk.Id,
+                        chunk.ChunkIndex,
+                        chunk.SourcePage,
+                        chunk.Content
+                    })
+                    .ToList()
+            })
+            .FirstOrDefaultAsync();
+
+        if (document is null)
+            return NotFound("Document not found.");
+
+        return Ok(document);
     }
-
-    var userId = Guid.Parse(userIdValue);
-
-    var document = await _db.Documents
-        .Where(document => document.Id == id && document.UserId == userId)
-        .Select(document => new
-        {
-            document.Id,
-            document.FileName,
-            document.DocumentType,
-            document.UploadedAt,
-            ChunkCount = document.Chunks.Count,
-            Chunks = document.Chunks
-                .OrderBy(chunk => chunk.ChunkIndex)
-                .Take(5)
-                .Select(chunk => new
-                {
-                    chunk.Id,
-                    chunk.ChunkIndex,
-                    chunk.SourcePage,
-                    chunk.Content
-                })
-                .ToList()
-        })
-        .FirstOrDefaultAsync();
-
-    if (document is null)
-    {
-        return NotFound("Document not found.");
-    }
-
-    return Ok(document);
-}
 }
